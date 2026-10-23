@@ -1,0 +1,3404 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GOLDSUN - Quality Control System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #1b5e20;
+      --primary-med: #15803d;
+      --primary-light: #e8f5e9;
+      --gold: #eab308;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --info: #2563eb;
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+    /* MÀN HÌNH KHÓA PASSWORD */
+    .gate-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 15px; }
+    .gate-card { background: #fff; padding: 30px 24px; border-radius: 12px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
+    .gate-card input { width: 100%; padding: 10px; margin: 12px 0; border: 1px solid var(--border); border-radius: 6px; text-align: center; font-size: 15px; outline: none; }
+    .gate-card input:focus { border-color: var(--primary-med); }
+
+    /* SIDEBAR BÊN TRÁI */
+    .sidebar { width: 262px; background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 18px 12px; flex-shrink: 0; overflow-y: auto; }
+    .brand-box { text-align: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+    .logo-svg { width: 80px; height: 80px; margin: 0 auto 6px; display: block; }
+    .brand-title { font-size: 21px; font-weight: 900; color: var(--primary); letter-spacing: 1.5px; }
+    .brand-sub { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-top: 2px; }
+
+    .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .nav-item { padding: 11px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 700; border-left: 4px solid var(--primary); }
+    .nav-item:hover:not(.active) { background: #f1f5f9; color: var(--text); }
+
+    /* KHU VỰC CHÍNH */
+    .main-area { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 14px 20px; min-width: 0; }
+
+    /* TOPBAR */
+    .topbar { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+    .timer-badge { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+    .sync-badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); background: #f8fafc; color: var(--text-muted); }
+    .user-pill { background: var(--primary-light); color: var(--primary); border: 1px solid #bbf7d0; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    /* BẢNG THÔNG BÁO & CẢNH BÁO TỰ ĐỘNG HÔM NAY (DAILY BULLETIN) */
+    .bulletin-bar {
+      background: #fff; border: 1px solid var(--border); border-left: 5px solid var(--primary-med);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03); flex-shrink: 0;
+    }
+    .bulletin-title { font-size: 12px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 6px; text-transform: uppercase; }
+    .bulletin-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+    .b-chip {
+      padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 5px; transition: 0.15s; border: 1px solid transparent;
+    }
+    .b-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+    .b-chip-ok { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+    .b-chip-warn { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    .b-chip-danger { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    .b-chip-info { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+
+    /* 3 TAB TRONG MỤC 5 */
+    .sub-tab-bar { display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 2px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .sub-tab-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sub-tab-group.vertical-mode { flex-direction: column; width: 100%; }
+    .sub-tab-btn {
+      padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); background: #fff;
+      color: var(--text-muted); font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; text-align: left;
+    }
+    .sub-tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .sub-tab-btn:hover:not(.active) { background: #f1f5f9; color: var(--text); }
+
+    /* NÚT & FORM */
+    .btn { padding: 7px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.15s; }
+    .btn-green { background: var(--primary-med); color: #fff; }
+    .btn-green:hover { background: var(--primary); }
+    .btn-blue { background: var(--info); color: #fff; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f1f5f9; }
+    .btn-icon-del { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; }
+    .btn-icon-del:hover { color: var(--danger); background: #fee2e2; }
+    .select-box { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; background: #fff; line-height: 1.4; height: 32px; }
+
+    /* CARD & BẢNG BÁO CÁO (ĐÃ FIX KHÔNG BỊ CO ÉP MẤT THANH CUỘN) */
+    .tab-section { flex-shrink: 0; width: 100%; }
+    .section-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); width: 100%; flex-shrink: 0; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+    .toolbar-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+    /* KHUNG BẢNG HIỂN THỊ RÕ THANH CUỘN DỌC + NGANG */
+    .matrix-wrap {
+      overflow-x: auto !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      max-height: 68vh;
+      min-height: 360px;
+      width: 100%;
+      position: relative;
+      background: #fff;
+    }
+    .matrix-wrap::-webkit-scrollbar { width: 10px; height: 10px; display: block; }
+    .matrix-wrap::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 6px; }
+    .matrix-wrap::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; border: 2px solid #f1f5f9; }
+    .matrix-wrap::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    .matrix-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; }
+    .matrix-table th, .matrix-table td { border: 1px solid #cbd5e1; padding: 8px 7px; min-width: 38px; white-space: nowrap; vertical-align: middle; }
+    .matrix-table thead th { background: #f1f5f9; color: #334155; position: sticky; top: 0; z-index: 10; font-weight: 700; }
+    .matrix-table thead tr:nth-child(2) th { top: 33px; z-index: 9; }
+
+    .sticky-col-1 { position: sticky !important; left: 0; background: #fff; z-index: 6; font-weight: 700; min-width: 72px !important; }
+    .sticky-col-2 { position: sticky !important; left: 72px; background: #fff; z-index: 6; text-align: left !important; font-weight: 700; min-width: 185px !important; }
+    .matrix-table thead .sticky-col-1, .matrix-table thead .sticky-col-2 { background: #f1f5f9 !important; z-index: 15 !important; }
+    
+    .emp-name-cell { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 6px; }
+    .weekend-col { background-color: #fef2f2 !important; color: var(--danger) !important; }
+    
+    .cell-day { cursor: pointer; font-weight: 700; transition: 0.1s; user-select: none; }
+    .cell-day:hover { background: #e2e8f0; outline: 2px solid var(--primary-med); }
+    .tag-44H, .tag-OK { background: #dcfce7 !important; color: #15803d; }
+    .tag-NP { background: #dbeafe !important; color: #1d4ed8; }
+    .tag-12P, .tag-BT { background: #fef3c7 !important; color: #b45309; }
+    .tag-KL, .tag-NG { background: #fee2e2 !important; color: #b91c1c; }
+
+    /* BADGE TRẠNG THÁI */
+    .status-badge { padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-block; }
+    .st-valid { background: #dcfce7; color: #15803d; }
+    .st-warn { background: #fef3c7; color: #b45309; }
+    .st-expired { background: #fee2e2; color: #b91c1c; }
+    .st-info { background: #dbeafe; color: #1d4ed8; }
+    .cat-pill { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }
+
+    /* KHUNG BIỂU ĐỒ */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+    .chart-box { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; height: 260px; position: relative; min-width: 0; }
+
+    /* MODAL FORM */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 9000; padding: 15px; }
+    .modal-box { background: #fff; border-radius: 10px; width: 100%; max-width: 700px; padding: 20px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
+    .modal-header h3 { font-size: 15px; color: var(--primary); text-transform: uppercase; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 10px; }
+    .form-group.full { grid-column: span 2; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
+    .form-control:focus { border-color: var(--primary-med); box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.15); }
+
+    .leave-option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+    .leave-opt-btn { padding: 14px 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700; font-size: 13px; cursor: pointer; text-align: center; transition: 0.15s; }
+    .leave-opt-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+
+    .paste-zone { border: 2px dashed #94a3b8; border-radius: 8px; padding: 14px; text-align: center; background: #f8fafc; cursor: pointer; transition: 0.2s; }
+    .paste-zone:hover, .paste-zone:focus { border-color: var(--primary-med); background: var(--primary-light); outline: none; }
+    .paste-preview-img { max-height: 140px; max-width: 100%; border-radius: 6px; margin-top: 8px; border: 1px solid var(--border); display: none; }
+
+    .thumb-img { width: 38px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+    .hidden { display: none !important; }
+
+    /* ===== TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI ===== */
+    .check-done-btn { padding: 6px 11px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: 2px solid var(--primary-med); background: #fff; color: var(--primary-med); display: inline-flex; align-items: center; gap: 5px; transition: 0.15s; }
+    .check-done-btn:hover { background: var(--primary-light); }
+    .check-done-btn.checked { background: var(--primary-med); color: #fff; border-color: var(--primary-med); }
+    .check-locked { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1; display: inline-flex; align-items: center; gap: 4px; }
+    .progress-wrap { width: 140px; background: #e2e8f0; border-radius: 10px; height: 18px; overflow: hidden; position: relative; margin: 0 auto; border: 1px solid #cbd5e1; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #15803d); transition: width 0.3s ease; }
+    .progress-text { position: absolute; inset: 0; font-size: 10px; font-weight: 800; color: #0f172a; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 2px #fff; }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column !important; height: auto !important; min-height: 100vh; overflow-x: hidden !important; overflow-y: auto !important; }
+      .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); padding: 10px 12px !important; }
+      .brand-box { display: flex; align-items: center; justify-content: center; gap: 10px; padding-bottom: 8px !important; margin-bottom: 8px !important; }
+      .logo-svg { width: 38px !important; height: 38px !important; margin: 0 !important; }
+      .brand-title { font-size: 18px !important; }
+      .brand-sub { font-size: 9px !important; }
+      .nav-menu { flex-direction: row !important; overflow-x: auto; gap: 6px; padding-bottom: 2px; }
+      .nav-item { padding: 8px 14px !important; font-size: 11px !important; white-space: nowrap; flex: 0 0 auto; justify-content: center; }
+      .section-title { font-size: 13px !important; }
+      .matrix-table { font-size: 11px !important; }
+      .matrix-table th, .matrix-table td { padding: 6px 5px !important; }
+      .toolbar-group { overflow-x: auto; padding-bottom: 2px; }
+      .btn { padding: 6px 10px !important; font-size: 11px !important; }
+      .select-box { font-size: 11px !important; height: 30px !important; }
+      .modal-box { padding: 14px !important; max-width: 100% !important; }
+      .user-pill, .timer-badge { font-size: 11px !important; }
+      .sub-tab-btn { font-size: 12px !important; padding: 8px 12px !important; }
+      .gate-card { max-width: 100% !important; }
+      .nav-item.active { border-left: none !important; border-bottom: 3px solid var(--primary); }
+      .main-area { padding: 10px !important; overflow-y: visible !important; }
+      .topbar { padding: 10px !important; flex-direction: column; align-items: stretch !important; }
+      .topbar > div { justify-content: space-between; width: 100%; }
+      .section-card { padding: 10px !important; }
+      .chart-grid { grid-template-columns: 1fr !important; }
+      .chart-box { height: 230px !important; }
+      .form-grid { grid-template-columns: 1fr !important; }
+      .form-group.full { grid-column: span 1 !important; }
+      .sticky-col-1 { min-width: 58px !important; font-size: 10px !important; }
+      .sticky-col-2 { left: 58px !important; min-width: 130px !important; font-size: 10px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. MÀN HÌNH NHẬP PASSWORD BẢO VỆ -->
+  <div id="gateOverlay" class="gate-overlay">
+    <form class="gate-card" onsubmit="event.preventDefault(); unlockDashboard();">
+      <svg class="logo-svg" viewBox="0 0 200 200">
+        <path d="M 110 20 A 85 85 0 0 0 65 172" fill="none" stroke="#1e4620" stroke-width="18"/>
+        <path d="M 110 44 A 61 61 0 0 0 110 166" fill="none" stroke="#1e4620" stroke-width="18"/>
+        <path d="M 102 68 A 38 38 0 1 0 148 105" fill="none" stroke="#1e4620" stroke-width="18"/>
+        <circle cx="112" cy="105" r="28" fill="#eab308"/>
+        <polygon points="112,79 116,95 130,85 122,99 138,101 124,108 136,119 120,115 123,130 112,118 101,130 104,115 88,119 100,108 86,101 102,99 94,85 108,95" fill="#ffffff"/>
+      </svg>
+      <div class="brand-title">GOLDSUN</div>
+      <div class="brand-sub" style="margin-bottom: 12px;">QUALITY CONTROL SYSTEM</div>
+      <div style="position:relative;">
+        <input type="password" id="gatePass" name="password" autocomplete="current-password" placeholder="Nhập Password hệ thống..." style="padding-right:44px;">
+        <button type="button" onclick="togglePinVisibility('gatePass', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; color:#64748b; padding:2px;" title="Hiển thị / Ẩn mật khẩu">👁️</button>
+      </div>
+      <button type="submit" class="btn btn-green" style="width: 100%; justify-content: center; padding: 10px;">ĐĂNG NHẬP DASHBOARD</button>
+      <div id="gateErr" style="color: var(--danger); font-size: 12px; margin-top: 8px;"></div>
+    </form>
+  </div>
+
+  <!-- 2. SIDEBAR TRÁI (HỖ TRỢ SẮP XẾP / ẨN HIỆN DANH MỤC CHO ADMIN) -->
+  <div class="sidebar">
+    <div class="brand-box">
+      <svg class="logo-svg" viewBox="0 0 200 200">
+        <path d="M 110 20 A 85 85 0 0 0 65 172" fill="none" stroke="#1e4620" stroke-width="18"/>
+        <path d="M 110 44 A 61 61 0 0 0 110 166" fill="none" stroke="#1e4620" stroke-width="18"/>
+        <path d="M 102 68 A 38 38 0 1 0 148 105" fill="none" stroke="#1e4620" stroke-width="18"/>
+        <circle cx="112" cy="105" r="28" fill="#eab308"/>
+        <polygon points="112,79 116,95 130,85 122,99 138,101 124,108 136,119 120,115 123,130 112,118 101,130 104,115 88,119 100,108 86,101 102,99 94,85 108,95" fill="#ffffff"/>
+      </svg>
+      <div>
+        <div class="brand-title">GOLDSUN</div>
+        <div class="brand-sub">QUALITY CONTROL SYSTEM</div>
+      </div>
+    </div>
+
+    <ul class="nav-menu" id="sidebarNavMenu"></ul>
+
+    <!-- NÚT SẮP XẾP / ẨN HIỆN DANH MỤC (CHỈ HIỂN THỊ VỚI ADMIN) -->
+    <div id="adminSidebarTools" class="hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
+      <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center; font-size: 11px;" onclick="openMenuConfigModal()">
+        ⚙️ Sắp xếp / Ẩn hiện danh mục
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. KHU VỰC CHÍNH -->
+  <div class="main-area">
+    
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span class="timer-badge">⏱ Tự động làm mới & Logout sau: <span id="countdownText">20:00</span></span>
+        <button type="button" class="btn btn-outline" onclick="manualSyncNow()">↻ Cập nhật dữ liệu ngay</button>
+        <span id="cloudSyncStatusBadge" class="sync-badge">💻 Lưu nội bộ</span>
+
+        <!-- KHỐI CÔNG CỤ ĐẶC QUYỀN ADMIN (CHỈ HIỆN KHI ĐĂNG NHẬP PIN ADMIN 254291) -->
+        <div id="adminBackupToolbar" class="hidden" style="display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; border-left: 2px solid var(--border); padding-left: 8px;">
+          <button type="button" class="btn btn-blue" onclick="exportFullBackupJSON()" title="Tải toàn bộ dữ liệu hệ thống về máy (.json)">📥 Sao Lưu (.json)</button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('restoreFileInput').click()" style="border-color:var(--primary-med); color:var(--primary);" title="Khôi phục dữ liệu từ file .json">📤 Phục Hồi</button>
+          <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="importFullBackupJSON(this)">
+          <button type="button" class="btn btn-outline" onclick="openSheetConfigModal()" style="border-color:#d97706; color:#b45309;">🔗 Cấu Hình Sheet</button>
+          <button type="button" class="btn btn-outline" onclick="openSecurityModal()" style="border-color:#dc2626; color:#b91c1c;">🔐 Đổi Pass & PIN</button>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="userBadge" class="user-pill hidden">
+          <span>👤 <span id="loggedUserName">User_Name</span></span>
+          <button type="button" class="btn btn-outline" style="border:none; color:var(--danger); padding:2px 5px;" onclick="logoutPIN()">[Thoát]</button>
+        </div>
+        <button type="button" id="btnOpenPin" class="btn btn-green" onclick="openPinModal()">🔑 Đăng Nhập PIN (ID)</button>
+      </div>
+    </div>
+
+    <!-- BẢNG THÔNG BÁO / LỜI NHẮC VIỆC HÔM NAY (DAILY IQC BULLETIN) -->
+    <div id="dailyBulletinBar" class="bulletin-bar">
+      <div class="bulletin-title">🔔 BẢNG TIN & NHẮC VIỆC IQC HÔM NAY (<span id="bulletinTodayLabel"></span>):</div>
+      <div id="bulletinChipsContainer" class="bulletin-chips"></div>
+    </div>
+
+    <!-- ================= TAB 1: MA TRẬN ĐĂNG KÝ NGHỈ 44H VÀ NGHỈ PHÉP BỘ PHẬN IQC ================= -->
+    <div id="tab1" class="tab-section">
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">BẢNG ĐĂNG KÝ NGHỈ 44H VÀ NGHỈ PHÉP BỘ PHẬN IQC</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Chú thích: <b style="color:#15803d">44H</b> (Nghỉ 44h) · <b style="color:#1d4ed8">NP</b> (Nghỉ phép) · <b style="color:#b45309">1/2P</b> (Nửa phép) · <b style="color:#b91c1c">KL</b> (Không lương) — <i>Click vào ô ngày để chọn trạng thái nghỉ hoặc xóa. Phép tháng sau = Phép còn lại tháng trước + 1.</i>
+            </div>
+          </div>
+          <div class="toolbar-group">
+            <label style="font-size: 12px; font-weight: bold;">Tháng:</label>
+            <select id="monthSelect" class="select-box" onchange="renderMatrix44h()">
+              <option value="1">Tháng 01</option><option value="2">Tháng 02</option><option value="3">Tháng 03</option>
+              <option value="4">Tháng 04</option><option value="5">Tháng 05</option><option value="6">Tháng 06</option>
+              <option value="7">Tháng 07</option><option value="8">Tháng 08</option><option value="9">Tháng 09</option>
+              <option value="10" selected>Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+            <label style="font-size: 12px; font-weight: bold;">Năm:</label>
+            <select id="yearSelectTab1" class="select-box dynamic-year-select" onchange="renderMatrix44h()"></select>
+            <button type="button" id="btnAddStaffAdmin" class="btn btn-green hidden" onclick="openAddStaffModal()">+ Thêm Nhân Sự (Admin)</button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="matrix-table" id="matrix44hTable">
+            <thead id="matrixHead"></thead>
+            <tbody id="matrixBody"></tbody>
+            <tfoot id="matrixFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 2: LOT PHÁT SINH CÔNG ĐOẠN ================= -->
+    <div id="tab2" class="tab-section hidden">
+      <div class="section-card" id="tab2CaptureArea">
+        <div class="section-header">
+          <div class="section-title">BÁO CÁO THỐNG KÊ & XU HƯỚNG LOT PHÁT SINH CÔNG ĐOẠN - BỘ PHẬN IQC</div>
+          <div class="toolbar-group">
+            <span style="font-size: 12px; font-weight: bold;">Tháng:</span>
+            <select id="filterMonthTab2" class="select-box" onchange="renderTab2()">
+              <option value="ALL">Tất cả tháng</option>
+              <option value="01">Tháng 01</option><option value="02">Tháng 02</option><option value="03">Tháng 03</option>
+              <option value="04">Tháng 04</option><option value="05">Tháng 05</option><option value="06">Tháng 06</option>
+              <option value="07">Tháng 07</option><option value="08">Tháng 08</option><option value="09">Tháng 09</option>
+              <option value="10" selected>Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+            <span style="font-size: 12px; font-weight: bold;">Năm:</span>
+            <select id="filterYearTab2" class="select-box dynamic-year-select-all" onchange="renderTab2()"></select>
+            <span style="font-size: 12px; font-weight: bold;">Nhà cung cấp:</span>
+            <select id="filterNCCTab2" class="select-box" onchange="renderTab2()"><option value="ALL">Tất cả NCC</option></select>
+            <span style="font-size: 12px; font-weight: bold;">Công đoạn:</span>
+            <select id="filterCDTab2" class="select-box" onchange="renderTab2()"><option value="ALL">Tất cả CĐ</option></select>
+            <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab2', 'Bao_Cao_Lot_Phat_Sinh')">📊 Xuất Excel</button>
+            <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab2CaptureArea', 'Bao_Cao_Lot_Phat_Sinh')">📸 Xuất Báo Cáo Ảnh</button>
+            <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddLotModal)">+ Nhập Lot Phát Sinh</button>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-box"><canvas id="chartLotByNCC"></canvas></div>
+          <div class="chart-box"><canvas id="chartLotByStage"></canvas></div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="matrix-table" id="tableTab2">
+            <thead>
+              <tr>
+                <th>STT</th><th>Ngày</th><th>Mã Code</th><th>Tên NVL</th><th>Nhà Cung Cấp</th>
+                <th>Công Đoạn</th><th>SL Kiểm</th><th>SL NG</th><th>Tỉ Lệ NG</th><th>Loại Lỗi</th><th>Biện Pháp Xử Lý</th><th>Người XN</th><th class="no-capture">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="bodyTab2"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: HÀNG NG CHỜ XỬ LÝ ================= -->
+    <div id="tab3" class="tab-section hidden">
+      <div class="section-card" id="tab3CaptureArea">
+        <div class="section-header">
+          <div class="section-title">BIỂU ĐỒ PHÂN TÍCH & DANH SÁCH HÀNG NG CHỜ XỬ LÝ - BỘ PHẬN IQC</div>
+          <div class="toolbar-group">
+            <span style="font-size: 12px; font-weight: bold;">Tháng:</span>
+            <select id="filterMonthTab3" class="select-box" onchange="renderTab3()">
+              <option value="ALL">Tất cả tháng</option>
+              <option value="01">Tháng 01</option><option value="02">Tháng 02</option><option value="03">Tháng 03</option>
+              <option value="04">Tháng 04</option><option value="05">Tháng 05</option><option value="06">Tháng 06</option>
+              <option value="07">Tháng 07</option><option value="08">Tháng 08</option><option value="09">Tháng 09</option>
+              <option value="10" selected>Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+            <span style="font-size: 12px; font-weight: bold;">Năm:</span>
+            <select id="filterYearTab3" class="select-box dynamic-year-select-all" onchange="renderTab3()"></select>
+            <span style="font-size: 12px; font-weight: bold;">Nhà cung cấp:</span>
+            <select id="filterNCCTab3" class="select-box" onchange="renderTab3()"><option value="ALL">Tất cả NCC</option></select>
+            <span style="font-size: 12px; font-weight: bold;">Hiện trạng:</span>
+            <select id="filterStatusTab3" class="select-box" onchange="renderTab3()">
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="Chưa xử lý">Chưa xử lý</option>
+              <option value="Đang xử lý">Đang xử lý</option>
+              <option value="Đã xử lý">Đã xử lý</option>
+            </select>
+            <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab3', 'Bao_Cao_Hang_NG_Pending')">📊 Xuất Excel</button>
+            <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab3CaptureArea', 'Bao_Cao_Hang_NG_Pending')">📸 Xuất Báo Cáo Ảnh</button>
+            <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddNGModal)">+ Nhập Hàng NG Mới</button>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-box"><canvas id="chartNGStatus"></canvas></div>
+          <div class="chart-box"><canvas id="chartNGSupplier"></canvas></div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="matrix-table" id="tableTab3">
+            <thead>
+              <tr>
+                <th>STT</th><th>Ngày</th><th>Mã Hàng</th><th>Loại Hàng</th><th>Nhà Cung Cấp</th>
+                <th>SL NG</th><th>Lỗi Gặp Phải</th><th>Hiện Trạng</th><th>Người Xác Nhận</th><th>Ghi Chú</th><th>Ảnh</th><th class="no-capture">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="bodyTab3"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 4: TÍNH PHÍ CLAIM FEE NCC ================= -->
+    <div id="tab4" class="tab-section hidden">
+      <div class="section-card" id="tab4CaptureArea">
+        <div class="section-header">
+          <div>
+            <div class="section-title">BẢNG TÍNH PHÍ CLAIM FEE NHÀ CUNG CẤP / NHÀ GIA CÔNG - BỘ PHẬN IQC</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Tự động tính số giờ lọc (hỗ trợ nhập tay 24h & ca đêm qua ngày mới) × Đơn giá nhân công lọc (60,052 VNĐ/h) để tổng hợp gửi NCC cuối tháng.
+            </div>
+          </div>
+          <div class="toolbar-group">
+            <span style="font-size: 12px; font-weight: bold;">Tháng:</span>
+            <select id="filterMonthTab4" class="select-box" onchange="renderTab4()">
+              <option value="ALL">Tất cả tháng</option>
+              <option value="01">Tháng 01</option><option value="02">Tháng 02</option><option value="03">Tháng 03</option>
+              <option value="04">Tháng 04</option><option value="05">Tháng 05</option><option value="06">Tháng 06</option>
+              <option value="07">Tháng 07</option><option value="08">Tháng 08</option><option value="09">Tháng 09</option>
+              <option value="10" selected>Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+            <span style="font-size: 12px; font-weight: bold;">Năm:</span>
+            <select id="filterYearTab4" class="select-box dynamic-year-select-all" onchange="renderTab4()"></select>
+            <span style="font-size: 12px; font-weight: bold;">Nhà gia công / NCC:</span>
+            <select id="filterNCCTab4" class="select-box" onchange="renderTab4()">
+              <option value="ALL">Tất cả Nhà Gia Công / NCC</option>
+            </select>
+            <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab4', 'Bang_Tinh_Claim_Fee_NCC')">📊 Xuất Excel Gửi NCC</button>
+            <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab4CaptureArea', 'Bang_Tinh_Claim_Fee_NCC')">📸 Xuất Ảnh</button>
+            <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddClaimModal)">+ Nhập Phiếu Claim Fee</button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="matrix-table" id="tableTab4">
+            <thead>
+              <tr>
+                <th rowspan="2">STT</th>
+                <th rowspan="2">Ngày tháng</th>
+                <th rowspan="2">Nhà Gia Công / NCC</th>
+                <th rowspan="2">Số Quản Lý NCR</th>
+                <th rowspan="2">Mã Sản Phẩm</th>
+                <th rowspan="2">SL Đưa Vào SX</th>
+                <th rowspan="2">SL OK</th>
+                <th rowspan="2">SL NG</th>
+                <th rowspan="2">% NG</th>
+                <th rowspan="2">Tình Trạng Lỗi</th>
+                <th colspan="4">Nhân Công Lọc (Sorting)</th>
+                <th rowspan="2">Giá Tiền Lọc</th>
+                <th rowspan="2">Tiền Lọc (VND)</th>
+                <th rowspan="2">Tiền Hàng (VND)</th>
+                <th rowspan="2">Tổng Chi Phí (VND)</th>
+                <th rowspan="2" class="no-capture">Thao Tác</th>
+              </tr>
+              <tr>
+                <th>Số người</th>
+                <th>Bắt đầu (24h)</th>
+                <th>Kết thúc (24h)</th>
+                <th>Tổng giờ</th>
+              </tr>
+            </thead>
+            <tbody id="bodyTab4"></tbody>
+            <tfoot id="footTab4"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 5: QUẢN LÝ MẪU & THIẾT BỊ BỘ PHẬN IQC (3 TAB CON) ================= -->
+    <div id="tab5" class="tab-section hidden">
+      
+      <div class="sub-tab-bar">
+        <div id="subTab5Container" class="sub-tab-group vertical-mode">
+          <button type="button" class="sub-tab-btn active" onclick="switchSubTab5('subTab5_1', this)">
+            📑 1. Danh Mục Quản Lý Bản Mẫu Chuẩn - Bộ Phận IQC
+          </button>
+          <button type="button" class="sub-tab-btn" onclick="switchSubTab5('subTab5_2', this)">
+            🔧 2. Danh Mục & Hiệu Chuẩn Thiết Bị Đo - Bộ Phận IQC
+          </button>
+          <button type="button" class="sub-tab-btn" onclick="switchSubTab5('subTab5_3', this)">
+            📅 3. Báo Cáo Theo Dõi Hoạt Động Thiết Bị Hàng Ngày - Bộ Phận IQC
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB CON 5.1: DANH MỤC QUẢN LÝ BẢN MẪU CHUẨN -->
+      <div id="subTab5_1" class="sub-tab5-pane">
+        <div class="section-card" id="tab5SampleCaptureArea">
+          <div class="section-header">
+            <div>
+              <div class="section-title">DANH MỤC QUẢN LÝ BẢN MẪU CHUẨN (GOLDEN SAMPLE) & MẪU GIỚI HẠN - BỘ PHẬN IQC</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                Phân loại theo nhóm hàng (Giấy, Cushion, Manual...), người ký duyệt, vị trí lưu tủ mẫu và cảnh báo tự động trước 15 ngày.
+              </div>
+            </div>
+            <div class="toolbar-group">
+              <span style="font-size: 12px; font-weight: bold;">Loại hàng:</span>
+              <select id="filterLoaiHangSample" class="select-box" onchange="renderTab5Sample()">
+                <option value="ALL">Tất cả loại hàng</option>
+                <option value="Giấy">Giấy</option>
+                <option value="Cushion">Cushion</option>
+                <option value="Manual">Manual</option>
+                <option value="Phôi sóng">Phôi sóng</option>
+                <option value="Khác">Khác</option>
+              </select>
+              <span style="font-size: 12px; font-weight: bold;">Trạng thái hạn:</span>
+              <select id="filterStatusSample" class="select-box" onchange="renderTab5Sample()">
+                <option value="ALL">Tất cả</option>
+                <option value="Còn hạn">🟢 Còn hạn</option>
+                <option value="Sắp hết hạn">🟡 Sắp hết hạn</option>
+                <option value="Hết hạn">🔴 Hết hạn</option>
+              </select>
+              <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab5Sample', 'Danh_Muc_Mau_Chuan_Bo_Phan_IQC')">📊 Xuất Excel</button>
+              <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab5SampleCaptureArea', 'Danh_Muc_Mau_Chuan_Bo_Phan_IQC')">📸 Xuất Ảnh</button>
+              <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddSampleModal)">+ Thêm Bản Mẫu Chuẩn</button>
+            </div>
+          </div>
+
+          <div class="matrix-wrap">
+            <table class="matrix-table" id="tableTab5Sample">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Mã Hàng / Code</th>
+                  <th>Loại Hàng</th>
+                  <th>Tên Mẫu & Phân Loại</th>
+                  <th>Nhà Cung Cấp / KH</th>
+                  <th>Vị Trí Lưu Trữ (Tủ/Ngăn)</th>
+                  <th>Người Ký Duyệt</th>
+                  <th>Ngày Ký Duyệt</th>
+                  <th>Ngày Hết Hạn</th>
+                  <th>Trạng Thái Hạn</th>
+                  <th>Người Lưu</th>
+                  <th>Ảnh Mẫu</th>
+                  <th class="no-capture">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="bodyTab5Sample"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB CON 5.2: DANH MỤC HIỆU CHUẨN THIẾT BỊ -->
+      <div id="subTab5_2" class="sub-tab5-pane hidden">
+        <div class="section-card" id="tab5EquipCaptureArea">
+          <div class="section-header">
+            <div>
+              <div class="section-title">DANH MỤC THEO DÕI HIỆU CHUẨN THIẾT BỊ ĐO KIỂM - BỘ PHẬN IQC</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                Khi Admin thêm hoặc xóa thiết bị tại bảng này, danh sách thiết bị ở Tab 3 (Báo cáo theo dõi hàng ngày) sẽ tự động cập nhật theo.
+              </div>
+            </div>
+            <div class="toolbar-group">
+              <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab5Equip', 'Danh_Muc_Thiet_Bi_Bo_Phan_IQC')">📊 Xuất Excel</button>
+              <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab5EquipCaptureArea', 'Danh_Muc_Thiet_Bi_Bo_Phan_IQC')">📸 Xuất Ảnh</button>
+              <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddEquipModal)">+ Thêm Thiết Bị Đo</button>
+            </div>
+          </div>
+
+          <div class="matrix-wrap">
+            <table class="matrix-table" id="tableTab5Equip">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Mã Thiết Bị</th>
+                  <th>Tên Thiết Bị Đo</th>
+                  <th>Số Serial</th>
+                  <th>Vị Trí Đặt Máy</th>
+                  <th>Ngày Hiệu Chuẩn</th>
+                  <th>Hạn Tiếp Theo</th>
+                  <th>Trạng Thái</th>
+                  <th>Người Phụ Trách</th>
+                  <th>Ảnh Tem</th>
+                  <th class="no-capture">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="bodyTab5Equip"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB CON 5.3: BÁO CÁO THEO DÕI HOẠT ĐỘNG THIẾT BỊ HÀNG NGÀY -->
+      <div id="subTab5_3" class="sub-tab5-pane hidden">
+        <div class="section-card" id="tab5DailyCaptureArea">
+          <div class="section-header">
+            <div>
+              <div class="section-title">BÁO CÁO THEO DÕI HOẠT ĐỘNG CỦA CÁC THIẾT BỊ HÀNG NGÀY - BỘ PHẬN IQC</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                Chú thích: <b style="color:#15803d">OK</b> (Hoạt động tốt) · <b style="color:#b91c1c">NG</b> (Lỗi / Bất thường) · <b style="color:#b45309">BT</b> (Bảo trì) — <i>Tự động lấy danh sách thiết bị từ Tab 2. Click vào từng ô ngày để chấm kiểm tra.</i>
+              </div>
+            </div>
+            <div class="toolbar-group">
+              <span style="font-size: 12px; font-weight: bold;">Tháng:</span>
+              <select id="monthSelectEquipDaily" class="select-box" onchange="renderTab5DailyMatrix()">
+                <option value="1">Tháng 01</option><option value="2">Tháng 02</option><option value="3">Tháng 03</option>
+                <option value="4">Tháng 04</option><option value="5">Tháng 05</option><option value="6">Tháng 06</option>
+                <option value="7">Tháng 07</option><option value="8">Tháng 08</option><option value="9">Tháng 09</option>
+                <option value="10" selected>Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+              </select>
+              <span style="font-size: 12px; font-weight: bold;">Năm:</span>
+              <select id="yearSelectEquipDaily" class="select-box dynamic-year-select" onchange="renderTab5DailyMatrix()"></select>
+              <span style="font-size: 12px; font-weight: bold;">Ca làm việc:</span>
+              <select id="shiftSelectEquipDaily" class="select-box" onchange="renderTab5DailyMatrix()">
+                <option value="Ca 1" selected>Ca 1 (Ngày)</option>
+                <option value="Ca 2">Ca 2 (Đêm)</option>
+              </select>
+              <button type="button" class="btn btn-green no-capture" onclick="requireAuth(markTodayAllEquipOK)">✓ Chấm Nhanh Hôm Nay Tất Cả OK</button>
+              <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab5DailyMatrix', 'Bao_Cao_Hoat_Dong_Thiet_Bi_Hang_Ngay_IQC')">📊 Xuất Báo Cáo Excel</button>
+              <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab5DailyCaptureArea', 'Bao_Cao_Hoat_Dong_Thiet_Bi_Hang_Ngay_IQC')">📸 Xuất Ảnh</button>
+            </div>
+          </div>
+
+          <div class="matrix-wrap">
+            <table class="matrix-table" id="tableTab5DailyMatrix">
+              <thead id="headTab5DailyMatrix"></thead>
+              <tbody id="bodyTab5DailyMatrix"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI BỘ PHẬN IQC ================= -->
+    <div id="tab6" class="tab-section hidden">
+      <div class="section-card" id="tab6TasksCaptureArea" style="margin-bottom:16px;">
+        <div class="section-header">
+          <div>
+            <div class="section-title">📋 6.1 · QUẢN LÝ GIAO VIỆC & THEO DÕI TIẾN ĐỘ CÔNG VIỆC - BỘ PHẬN IQC</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Mã công việc tự động nhảy STT theo ngày (<b>CV-DDMM-01, 02...</b>). Chỉ <b>chính người được giao việc</b> mới có quyền bấm tích hoàn thành để tính vào hiệu suất KPI.
+            </div>
+          </div>
+          <div class="toolbar-group">
+            <span style="font-size: 12px; font-weight: bold;">Tháng:</span>
+            <select id="filterMonthTab6" class="select-box" onchange="renderTab6All()">
+              <option value="ALL">Tất cả tháng</option>
+              <option value="01">Tháng 01</option><option value="02">Tháng 02</option><option value="03">Tháng 03</option>
+              <option value="04">Tháng 04</option><option value="05">Tháng 05</option><option value="06">Tháng 06</option>
+              <option value="07">Tháng 07</option><option value="08">Tháng 08</option><option value="09">Tháng 09</option>
+              <option value="10" selected>Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+            <span style="font-size: 12px; font-weight: bold;">Năm:</span>
+            <select id="filterYearTab6" class="select-box dynamic-year-select-all" onchange="renderTab6All()"></select>
+            <span style="font-size: 12px; font-weight: bold;">Người nhận việc:</span>
+            <select id="filterAssigneeTab6" class="select-box" onchange="renderTab6All()"><option value="ALL">Tất cả nhân sự</option></select>
+            <span style="font-size: 12px; font-weight: bold;">Trạng thái:</span>
+            <select id="filterStatusTab6" class="select-box" onchange="renderTab6All()">
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="Đang thực hiện">⏳ Đang thực hiện</option>
+              <option value="Hoàn thành đúng hạn">✅ Hoàn thành đúng hạn</option>
+              <option value="Hoàn thành trễ hạn">⚠️ Hoàn thành trễ hạn</option>
+              <option value="Quá hạn chưa xong">🚨 Quá hạn chưa xong</option>
+            </select>
+            <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab6Tasks', 'Bang_Giao_Viec_Bo_Phan_IQC')">📊 Xuất Excel</button>
+            <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab6TasksCaptureArea', 'Bang_Giao_Viec_Bo_Phan_IQC')">📸 Xuất Ảnh</button>
+            <button type="button" id="btnOpenAddTask" class="btn btn-green no-capture" onclick="openAddTaskModal()">+ Giao Việc Mới</button>
+          </div>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix-table" id="tableTab6Tasks">
+            <thead>
+              <tr>
+                <th>STT</th><th>Mã Việc (Auto Ngày)</th><th>Ngày Giao</th><th>Hạn Hoàn Thành</th>
+                <th style="text-align:left; min-width:220px;">Nội Dung Công Việc</th><th>Mức Độ</th>
+                <th>Người Giao</th><th>Người Nhận</th>
+                <th>Xác Nhận Hoàn Thành<br><span style="font-size:10px;font-weight:normal;">(Chỉ người nhận tích)</span></th>
+                <th>Ngày Thực Tế Xong</th><th>Đánh Giá Tiến Độ</th><th>Tiến Độ</th>
+                <th class="no-capture">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="bodyTab6Tasks"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-card" id="tab6KPICaptureArea">
+        <div class="section-header">
+          <div>
+            <div class="section-title">📊 6.2 · TỔNG HỢP HIỆU SUẤT & ĐÁNH GIÁ KPI THÀNH VIÊN - BỘ PHẬN IQC</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Tự động tổng hợp tiến độ từ bảng giao việc. <b>Điểm KPI</b> = (Số việc đúng hạn × 100% + Số việc trễ hạn × 50%) / Tổng số việc được giao. Admin bật/tắt quyền <b>Giao việc</b> tại cột phân quyền.
+            </div>
+          </div>
+          <div class="toolbar-group">
+            <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab6KPI', 'Bang_Tong_Hop_KPI_Bo_Phan_IQC')">📊 Xuất Báo Cáo KPI Excel</button>
+            <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab6KPICaptureArea', 'Bang_Tong_Hop_KPI_Bo_Phan_IQC')">📸 Xuất Ảnh Bảng KPI</button>
+          </div>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix-table" id="tableTab6KPI">
+            <thead>
+              <tr>
+                <th>STT</th><th>Mã Nhân Viên</th><th style="text-align:left;">Họ và Tên Thành Viên</th>
+                <th class="kpi-role-col">Quyền Giao Việc<br><span style="font-size:10px;font-weight:normal;">(Admin cấp quyền)</span></th>
+                <th>Tổng Việc Được Giao</th>
+                <th style="color:#15803d;">Hoàn Thành Đúng Hạn (100%)</th>
+                <th style="color:#b45309;">Hoàn Thành Trễ Hạn (50%)</th>
+                <th style="color:#2563eb;">Đang Thực Hiện</th>
+                <th style="color:#dc2626;">Quá Hạn Chưa Xong (0%)</th>
+                <th style="min-width:160px;">Tỷ Lệ Hoàn Thành</th>
+                <th>Điểm Hiệu Suất KPI</th><th>Xếp Loại KPI</th>
+              </tr>
+            </thead>
+            <tbody id="bodyTab6KPI"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= MODAL ĐỔI PASSWORD DASHBOARD & QUẢN LÝ MÃ PIN NHÂN VIÊN (CHỈ ADMIN) ================= -->
+  <div id="securityModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 style="color: var(--danger);">🔐 QUẢN LÝ PASSWORD DASHBOARD & MÃ PIN NHÂN VIÊN</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('securityModal')">✕</button>
+      </div>
+      <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px; margin-bottom:14px;">
+        <label style="font-size:12px; font-weight:800; color:#b91c1c; display:block; margin-bottom:6px;">
+          1. MẬT KHẨU MỞ KHÓA DASHBOARD CHUNG (SYSTEM PASSWORD):
+        </label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="cfgSystemPassInput" class="form-control" style="font-weight:bold; color:var(--primary);" placeholder="Nhập mật khẩu mở khóa hệ thống...">
+          <span style="font-size:11px; color:#64748b; white-space:nowrap;">(Đồng bộ với ô H2 trên Sheet NHAN_SU_PIN)</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px; font-weight:800; color:var(--primary); display:block; margin-bottom:6px;">
+          2. BẢNG MÃ PIN & PHÉP GỐC CỦA TỪNG NHÂN VIÊN (ĐỒNG BỘ 2 CHIỀU VỚI SHEET NHAN_SU_PIN):
+        </label>
+        <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:6px;">
+          <table class="matrix-table" style="font-size:12px;">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã ID</th>
+                <th>Họ và Tên</th>
+                <th>Vai Trò</th>
+                <th>Mã PIN Đăng Nhập</th>
+                <th>Phép Gốc (T10)</th>
+              </tr>
+            </thead>
+            <tbody id="securityUsersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('securityModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveSecurityConfig()">💾 Lưu & Đồng Bộ Lên Sheet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CHỌN TRẠNG THÁI NGHỈ (TAB 1) ================= -->
+  <div id="leaveCellModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 360px;">
+      <div class="modal-header">
+        <h3 id="leaveCellTitle">Cập Nhật Ngày Nghỉ</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('leaveCellModal')">✕</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Chọn trạng thái nghỉ theo chú thích:</p>
+      <div class="leave-option-grid">
+        <div class="leave-opt-btn tag-44H" onclick="applyLeaveValue('44H')">44H (Nghỉ 44h)</div>
+        <div class="leave-opt-btn tag-NP" onclick="applyLeaveValue('NP')">NP (Nghỉ phép)</div>
+        <div class="leave-opt-btn tag-12P" onclick="applyLeaveValue('1/2P')">1/2P (Nửa phép)</div>
+        <div class="leave-opt-btn tag-KL" onclick="applyLeaveValue('KL')">KL (Không lương)</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
+        <button type="button" class="btn btn-danger" style="flex: 1; justify-content: center;" onclick="applyLeaveValue('')">🗑️ Xóa Trống Ô Này</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('leaveCellModal')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CHỌN TRẠNG THÁI HOẠT ĐỘNG THIẾT BỊ HÀNG NGÀY (TAB 5.3) ================= -->
+  <div id="equipDailyCellModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 380px;">
+      <div class="modal-header">
+        <h3 id="equipDailyCellTitle">Chấm Kiểm Tra Thiết Bị</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('equipDailyCellModal')">✕</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Chọn tình trạng hoạt động của thiết bị:</p>
+      <div class="leave-option-grid">
+        <div class="leave-opt-btn tag-OK" onclick="applyEquipDailyValue('OK')">🟢 OK (Hoạt động tốt)</div>
+        <div class="leave-opt-btn tag-NG" onclick="applyEquipDailyValue('NG')">🔴 NG (Lỗi / Bất thường)</div>
+        <div class="leave-opt-btn tag-BT" style="grid-column: span 2;" onclick="applyEquipDailyValue('BT')">🟡 BT (Đang bảo trì / Hiệu chuẩn)</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
+        <button type="button" class="btn btn-danger" style="flex: 1; justify-content: center;" onclick="applyEquipDailyValue('')">🗑️ Xóa Trống Ô Này</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('equipDailyCellModal')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL GIAO VIỆC MỚI / SỬA CÔNG VIỆC (TAB 6) ================= -->
+  <div id="taskModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="taskModalTitle">Giao Việc Mới - Bộ Phận IQC</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('taskModal')">✕</button>
+      </div>
+      <input type="hidden" id="taskEditIdx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Người Giao Việc:</label><select id="fTkAssigner" class="form-control"></select></div>
+        <div class="form-group"><label>Người Nhận Việc (*):</label><select id="fTkAssignee" class="form-control"></select></div>
+        <div class="form-group"><label>Ngày Giao Việc:</label><input type="date" id="fTkStartDate" class="form-control" onchange="previewAutoTaskCodeByDate()"></div>
+        <div class="form-group"><label>Hạn Hoàn Thành (Deadline) (*):</label><input type="date" id="fTkDueDate" class="form-control"></div>
+        <div class="form-group"><label>Mã Công Việc (Auto nhảy theo ngày):</label><input type="text" id="fTkCode" class="form-control" placeholder="Tự động sinh CV-DDMM-XX"></div>
+        <div class="form-group"><label>Mức Độ Ưu Tiên:</label>
+          <select id="fTkPriority" class="form-control">
+            <option value="Bình thường">🔵 Bình thường</option>
+            <option value="Quan trọng">🟡 Quan trọng</option>
+            <option value="Khẩn cấp">🔴 Khẩn cấp (Trong ca)</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Nội Dung Công Việc Cụ Thể (*):</label><textarea id="fTkTitle" class="form-control" rows="2" placeholder="Nhập nội dung công việc cần giao..."></textarea></div>
+        <div class="form-group full"><label>Ghi Chú / Yêu Cầu Kết Quả Đầu Ra:</label><input type="text" id="fTkNote" class="form-control" placeholder="Nhập yêu cầu báo cáo hoặc ghi chú..."></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('taskModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveTaskForm()">💾 Lưu & Giao Việc</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CẤU HÌNH LIÊN KẾT GOOGLE SHEETS (CHỈ ADMIN) ================= -->
+  <div id="sheetConfigModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 style="color: var(--primary);">🔗 CẤU HÌNH ĐỒNG BỘ GOOGLE SHEETS (2 CHIỀU)</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('sheetConfigModal')">✕</button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+        Dán đường link Web App (kết thúc bằng <b>/exec</b>) từ Google Apps Script. Khi đưa lên <b>GitHub Pages</b>, bạn hãy dán luôn link này vào biến <code>DEFAULT_API_URL</code> trong code để mọi máy nhân viên đều tự động kết nối.
+      </div>
+      <div class="form-group">
+        <label>Đường dẫn API Web App URL (/exec):</label>
+        <input type="text" id="cfgApiUrlInput" class="form-control" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="font-family: monospace; font-size: 12px;">
+      </div>
+      <div id="sheetConnectionStatus" style="font-size: 12px; margin-bottom: 12px; padding: 8px 10px; border-radius: 6px; background: #f8fafc; border: 1px solid var(--border);">
+        Trạng thái: <span id="statusTextConnect" style="font-weight:700; color:#64748b;">Chưa kiểm tra</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline" onclick="testSheetConnection()">⚡ Kiểm tra & Tải về</button>
+          <button type="button" class="btn btn-blue" onclick="pushAllDataToCloud(true, true)">☁️ Đẩy dữ liệu lên Sheet</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('sheetConfigModal')">Đóng</button>
+          <button type="button" class="btn btn-green" onclick="saveSheetConfig()">💾 Lưu URL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL SẮP XẾP & ẨN HIỆN DANH MỤC MENU (CHỈ ADMIN) ================= -->
+  <div id="menuConfigModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>⚙️ Sắp Xếp & Ẩn/Hiện Danh Mục Menu</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('menuConfigModal')">✕</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+        Tích chọn để hiển thị hoặc bấm mũi tên <b>⬆️ / ⬇️</b> để thay đổi thứ tự các hạng mục trên thanh Menu bên trái:
+      </p>
+      <div id="menuConfigList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('menuConfigModal')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL XÁC NHẬN XÓA DỮ LIỆU (CHỈ ADMIN) ================= -->
+  <div id="confirmDeleteModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 380px; text-align: center;">
+      <div style="font-size: 42px; margin-bottom: 8px;">⚠️</div>
+      <h3 style="color: var(--danger); margin-bottom: 10px;">Xác Nhận Xóa Dữ Liệu</h3>
+      <p style="font-size: 14px; color: var(--text); margin-bottom: 18px;">Bạn có chắc chắn muốn xóa dữ liệu này không?</p>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="cancelDeleteConfirm()">Hủy</button>
+        <button type="button" class="btn btn-danger" style="flex:1; justify-content:center;" onclick="executeDeleteConfirm()">Xác Nhận Xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 1: THÊM NHÂN SỰ MỚI (CHỈ ADMIN) ================= -->
+  <div id="staffModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3>Thêm Nhân Sự Vào Bảng Nghỉ 44H - Bộ Phận IQC</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('staffModal')">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Mã Nhân Viên / Mã PIN (GS.*****):</label>
+        <input type="text" id="stId" class="form-control" placeholder="VD: GS.55123">
+      </div>
+      <div class="form-group">
+        <label>Họ và Tên Nhân Sự:</label>
+        <input type="text" id="stName" class="form-control" placeholder="VD: NGUYỄN VĂN B">
+      </div>
+      <div class="form-group">
+        <label>Số Phép Hiện Tại (Tháng 10):</label>
+        <input type="number" step="0.5" id="stPhep" class="form-control" placeholder="Nhập số phép hiện tại...">
+      </div>
+      <div class="form-group">
+        <label>Phân Quyền Role:</label>
+        <select id="stRole" class="form-control">
+          <option value="IQC" selected>Nhân viên (IQC) — chỉ nhập / sửa dữ liệu</option>
+          <option value="Admin">Quản trị viên (Admin) — đầy đủ quyền thêm / sửa / xóa</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="closeModal('staffModal')">Hủy</button>
+        <button type="button" class="btn btn-green" style="flex:1; justify-content:center;" onclick="saveNewStaff()">Lưu Nhân Viên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 2: BẢNG NHẬP / SỬA LOT PHÁT SINH (TAB 2) ================= -->
+  <div id="lotModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="lotModalTitle">Nhập Thông Tin Lot Phát Sinh Công Đoạn</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('lotModal')">✕</button>
+      </div>
+      <input type="hidden" id="lotEditIdx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Ngày Phát Sinh:</label><input type="date" id="fLotNgay" class="form-control"></div>
+        <div class="form-group"><label>Mã Code / Part No. (*):</label><input type="text" id="fLotCode" class="form-control" placeholder="VD: GH69-43532A"></div>
+        <div class="form-group"><label>Tên Nguyên Vật Liệu:</label><input type="text" id="fLotTenNVL" class="form-control" placeholder="VD: MANUAL BOX"></div>
+        <div class="form-group"><label>Nhà Cung Cấp:</label><input type="text" id="fLotNCC" class="form-control" placeholder="VD: CHIẾN LINH"></div>
+        <div class="form-group"><label>Công Đoạn Phát Sinh:</label><input type="text" id="fLotCD" class="form-control" placeholder="VD: SHD, BẾ 1A, GIFT..."></div>
+        <div class="form-group"><label>Tỉ Lệ NG Tự Tính:</label><input type="text" id="fLotTiLePreview" class="form-control" value="0.00%" disabled style="background:#fef2f2; color:var(--danger); font-weight:bold;"></div>
+        <div class="form-group"><label>Số Lượng Kiểm Tra:</label><input type="number" id="fLotSLKiem" class="form-control" placeholder="Nhập SL kiểm..." oninput="calcLotRatio()"></div>
+        <div class="form-group"><label>Số Lượng NG Phát Sinh:</label><input type="number" id="fLotSLNG" class="form-control" placeholder="Nhập SL NG..." oninput="calcLotRatio()"></div>
+        <div class="form-group full"><label>Loại Hình Lỗi / Nguyên Nhân:</label><input type="text" id="fLotLoi" class="form-control" placeholder="VD: BẾ LỆCH, BẨN BỀ MẶT..."></div>
+        <div class="form-group full"><label>Biện Pháp Xử Lý:</label><textarea id="fLotBienPhap" class="form-control" rows="2" placeholder="VD: Yêu cầu bên gia công tách lọc..."></textarea></div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('lotModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveLotForm()">💾 Lưu Dữ Liệu Lot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 3: BẢNG NHẬP / SỬA HÀNG NG (TAB 3) ================= -->
+  <div id="ngModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="ngModalTitle">Nhập Thông Tin Hàng NG Chờ Xử Lý</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('ngModal')">✕</button>
+      </div>
+      <input type="hidden" id="ngEditIdx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Ngày Ghi Nhận:</label><input type="date" id="fNgNgay" class="form-control"></div>
+        <div class="form-group"><label>Mã Hàng (*):</label><input type="text" id="fNgMaHang" class="form-control" placeholder="VD: M001"></div>
+        <div class="form-group"><label>Loại Hàng / Tên NVL:</label><input type="text" id="fNgLoaiHang" class="form-control" placeholder="VD: Nhôm tấm A5052"></div>
+        <div class="form-group"><label>Nhà Cung Cấp:</label><input type="text" id="fNgNCC" class="form-control" placeholder="VD: SEANSTAR"></div>
+        <div class="form-group"><label>Số Lượng NG:</label><input type="number" id="fNgSL" class="form-control" placeholder="Nhập số lượng NG..."></div>
+        <div class="form-group">
+          <label>Hiện Trạng Xử Lý:</label>
+          <select id="fNgHienTrang" class="form-control">
+            <option value="Chưa xử lý">Chưa xử lý</option>
+            <option value="Đang xử lý">Đang xử lý</option>
+            <option value="Đã xử lý">Đã xử lý</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Lỗi Gặp Phải:</label><input type="text" id="fNgLoi" class="form-control" placeholder="VD: Xước bề mặt sâu..."></div>
+        <div class="form-group full"><label>Ghi Chú Xử Lý:</label><input type="text" id="fNgGhiChu" class="form-control" placeholder="VD: Yêu cầu đổi lô mới..."></div>
+        <div class="form-group full">
+          <label>Đính Kèm Ảnh Minh Chứng (Bấm Ctrl + V để dán ảnh trực tiếp hoặc Chọn tệp):</label>
+          <div class="paste-zone" tabindex="0">
+            <div style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh từ bộ nhớ tạm</div>
+            <input type="file" id="fNgImg" accept="image/*" onchange="previewPasteImage(this, 'ngPastePreview')" style="font-size: 11px; margin-top:4px;">
+            <div><img id="ngPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('ngModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveNGForm()">💾 Lưu Hàng NG</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 4: BẢNG NHẬP CLAIM FEE NCC (TAB 4 - ĐÃ CHUYỂN SANG NHẬP TAY 24H) ================= -->
+  <div id="claimModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="claimModalTitle">Nhập Tính Phí Claim Fee Nhà Cung Cấp</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('claimModal')">✕</button>
+      </div>
+      <input type="hidden" id="claimEditIdx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Ngày Tháng:</label><input type="date" id="fClNgay" class="form-control" onchange="previewAutoNCRByDate()"></div>
+        <div class="form-group"><label>Nhà Gia Công / NCC (*):</label><input type="text" id="fClNCC" class="form-control" placeholder="VD: HÙNG LINH, SUNGJIN, SAMPRINT"></div>
+        <div class="form-group"><label>Số Quản Lý NCR (Auto nhảy theo ngày):</label><input type="text" id="fClNCR" class="form-control" placeholder="Tự động sinh NCR-I-YYYYMMDD-XXX"></div>
+        <div class="form-group"><label>Mã Sản Phẩm (*):</label><input type="text" id="fClCode" class="form-control" placeholder="VD: GH69-47058A"></div>
+        <div class="form-group"><label>SL Đưa Vào SX (pcs):</label><input type="number" id="fClSLVao" class="form-control" placeholder="Nhập SL đưa vào SX..." oninput="calcClaimPreview()"></div>
+        <div class="form-group"><label>Số Lượng NG (pcs):</label><input type="number" id="fClSLNG" class="form-control" placeholder="Nhập SL NG..." oninput="calcClaimPreview()"></div>
+        <div class="form-group full"><label>Tình Trạng Lỗi:</label><input type="text" id="fClLoi" class="form-control" placeholder="VD: Bẩn, xước, bẻ sai lằn, gãy pad..."></div>
+        <div class="form-group"><label>Số Người Lọc:</label><input type="number" id="fClSoNguoi" class="form-control" placeholder="Nhập số người lọc (Mặc định: 1)..." oninput="calcClaimPreview()"></div>
+        <div class="form-group"><label>Đơn Giá Lọc (VNĐ/giờ):</label><input type="number" id="fClDonGiaLoc" class="form-control" placeholder="Mặc định: 60052" oninput="calcClaimPreview()"></div>
+        <div class="form-group">
+          <label>Giờ Bắt Đầu Lọc (Nhập 24h - VD: 08:00 hoặc 20:30):</label>
+          <input type="text" id="fClStart" class="form-control" inputmode="numeric" maxlength="5" placeholder="Gõ 08:00 hoặc 0800..." oninput="autoFormatTime24h(this); calcClaimPreview();" onblur="normalizeTime24hOnBlur(this); calcClaimPreview();">
+        </div>
+        <div class="form-group">
+          <label>Giờ Kết Thúc Lọc (Nhập 24h - VD: 17:30 hoặc 05:00):</label>
+          <input type="text" id="fClEnd" class="form-control" inputmode="numeric" maxlength="5" placeholder="Gõ 17:30 hoặc 1730..." oninput="autoFormatTime24h(this); calcClaimPreview();" onblur="normalizeTime24hOnBlur(this); calcClaimPreview();">
+        </div>
+        <div class="form-group"><label>Tổng Số Giờ Lọc (Có thể sửa tay):</label><input type="number" step="0.01" id="fClTongGio" class="form-control" placeholder="Tự tính hoặc nhập tay..." oninput="calcClaimTotalOnly()"></div>
+        <div class="form-group"><label>Tiền Hàng Phạt Thêm (VND - nếu có):</label><input type="number" id="fClTienHang" class="form-control" placeholder="Nhập tiền phạt hàng (nếu có)..." oninput="calcClaimTotalOnly()"></div>
+        <div class="form-group full">
+          <label>Tổng Chi Phí Claim Dự Kiến (VND):</label>
+          <input type="text" id="fClTongTienPreview" class="form-control" value="0 VNĐ" disabled style="background:#fef2f2; color:var(--danger); font-weight:800; font-size:15px;">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('claimModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveClaimForm()">💾 Lưu Phiếu Claim Fee</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 5-1: THÊM / SỬA BẢN MẪU CHUẨN ================= -->
+  <div id="sampleModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="sampleModalTitle">Cập Nhật Bản Mẫu Chuẩn / Mẫu Giới Hạn - Bộ Phận IQC</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('sampleModal')">✕</button>
+      </div>
+      <input type="hidden" id="sampleEditIdx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Mã Hàng / Code (*):</label><input type="text" id="fSpCode" class="form-control" placeholder="VD: GH69-47058A"></div>
+        <div class="form-group">
+          <label>Loại Hàng (*):</label>
+          <select id="fSpLoaiHang" class="form-control">
+            <option value="Giấy">Giấy</option>
+            <option value="Cushion">Cushion</option>
+            <option value="Manual">Manual</option>
+            <option value="Phôi sóng">Phôi sóng</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tên Mẫu & Phân Loại:</label><input type="text" id="fSpTen" class="form-control" placeholder="VD: Mẫu chuẩn màu / Mẫu giới hạn xước"></div>
+        <div class="form-group"><label>Nhà Cung Cấp / Khách Hàng:</label><input type="text" id="fSpNCC" class="form-control" placeholder="VD: SEANSTAR / SAMSUNG"></div>
+        <div class="form-group"><label>Vị Trí Lưu Trữ (Tủ / Ngăn / File số):</label><input type="text" id="fSpViTri" class="form-control" placeholder="VD: Tủ A - Ngăn 2 - File 05"></div>
+        <div class="form-group"><label>Người Ký Duyệt (*):</label><input type="text" id="fSpNguoiKy" class="form-control" placeholder="Nhập họ tên người ký duyệt..."></div>
+        <div class="form-group"><label>Ngày Ký Duyệt:</label><input type="date" id="fSpNgayKy" class="form-control"></div>
+        <div class="form-group"><label>Ngày Hết Hạn:</label><input type="date" id="fSpHan" class="form-control"></div>
+        <div class="form-group full">
+          <label>Ảnh Chụp Mẫu Có Chữ Ký (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
+          <div class="paste-zone" tabindex="0">
+            <div style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh bản mẫu</div>
+            <input type="file" id="fSpImg" accept="image/*" onchange="previewPasteImage(this, 'spPastePreview')" style="font-size: 11px; margin-top:4px;">
+            <div><img id="spPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('sampleModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveSampleForm()">💾 Lưu Bản Mẫu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 5-2: THÊM / SỬA THIẾT BỊ ĐO KIỂM ================= -->
+  <div id="equipModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="equipModalTitle">Cập Nhật Thiết Bị Đo Kiểm & Hiệu Chuẩn - Bộ Phận IQC</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('equipModal')">✕</button>
+      </div>
+      <input type="hidden" id="equipEditIdx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Mã Thiết Bị (*):</label><input type="text" id="fEqMa" class="form-control" placeholder="VD: TB-IQC-01"></div>
+        <div class="form-group"><label>Tên Thiết Bị Đo (*):</label><input type="text" id="fEqTen" class="form-control" placeholder="VD: Thước cặp điện tử Mitutoyo"></div>
+        <div class="form-group"><label>Số Serial:</label><input type="text" id="fEqSerial" class="form-control" placeholder="VD: SN-882910"></div>
+        <div class="form-group"><label>Vị Trí Đặt Máy:</label><input type="text" id="fEqViTri" class="form-control" placeholder="VD: Bàn kiểm IQC số 1"></div>
+        <div class="form-group"><label>Ngày Hiệu Chuẩn Gần Nhất:</label><input type="date" id="fEqNgayHC" class="form-control"></div>
+        <div class="form-group"><label>Hạn Hiệu Chuẩn Tiếp Theo:</label><input type="date" id="fEqHanHC" class="form-control"></div>
+        <div class="form-group full">
+          <label>Ảnh Tem Hiệu Chuẩn (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
+          <div class="paste-zone" tabindex="0">
+            <div style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh tem hiệu chuẩn</div>
+            <input type="file" id="fEqImg" accept="image/*" onchange="previewPasteImage(this, 'eqPastePreview')" style="font-size: 11px; margin-top:4px;">
+            <div><img id="eqPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('equipModal')">Đóng</button>
+        <button type="button" class="btn btn-green" onclick="saveEquipForm()">💾 Lưu Thiết Bị</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐĂNG NHẬP PIN RIÊNG CHO ADMIN (254291) & NHÂN VIÊN IQC (GS.*****) -->
+  <div id="pinModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
+      <h3 style="color: var(--primary); margin-bottom: 6px;">ĐĂNG NHẬP HỆ THỐNG IQC</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Nhân viên IQC nhập mã <b>GS.*****</b> (hoặc 5 số đuôi)
+      </p>
+      <div style="position:relative; margin-bottom: 10px;">
+        <input type="password" id="pinInput" class="form-control" placeholder="Nhập PIN hoặc Mã ID..." style="text-align: center; font-size: 16px; font-weight: bold; padding-right: 44px;" onkeydown="if(event.key==='Enter') submitPinLogin()">
+        <button type="button" onclick="togglePinVisibility('pinInput', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; color:#64748b; padding:2px;" title="Hiển thị / Ẩn mã PIN">👁️</button>
+      </div>
+      <div id="pinError" style="color: var(--danger); font-size: 12px; margin-bottom: 10px;"></div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="closeModal('pinModal')">Hủy</button>
+        <button type="button" class="btn btn-green" style="flex:1; justify-content:center;" onclick="submitPinLogin()">Đăng Nhập</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    try {
+      if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+      }
+    } catch (err) {}
+
+    let systemPass = localStorage.getItem("IQC_GOLDSUN_SYS_PASS") || "IQC@2026";
+    const STORAGE_KEY_ALL = "GOLDSUN_IQC_MASTER_DATA_V1";
+
+    // KHI ĐƯA LÊN GITHUB PAGES: Dán link /exec của Google Apps Script vào giữa 2 dấu nháy kép dưới đây
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyiGwbfUU_geNhZvYIqA2HgtMUE8sa-yZhsMIXBnmKRrbJ3b1U_o2aIaCZq3w2TKUt_/exec";
+    let API_URL = localStorage.getItem("IQC_GOLDSUN_API_URL") || DEFAULT_API_URL;
+
+    // HÀM LẤY NGÀY THỰC TẾ THEO MÚI GIỜ ĐỊA PHƯƠNG (TỰ ĐỘNG NHẢY KHI SANG NĂM 2027, 2028...)
+    function getTodayISO() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    let TODAY_STR = getTodayISO();
+    let currentUser = null;
+    let tempBase64 = "";
+    let activeLeaveCell = null;
+    let activeEquipDailyCell = null;
+    let currentActiveTabId = "tab1";
+
+    function formatDateVN(dateStr) {
+      if (!dateStr) return "";
+      const s = String(dateStr).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const [y, m, d] = s.split('-');
+        return `${d}/${m}/${y}`;
+      }
+      return s;
+    }
+
+    // HỖ TRỢ NHẬP TAY GIỜ LỌC 24H (00:00 -> 23:59) VÀ TỰ NHẢY SỐ GIỜ NGAY KHI GÕ
+    function autoFormatTime24h(inp) {
+      let digits = inp.value.replace(/[^\d:hH.]/g, '');
+      if (/^\d{4}$/.test(digits)) {
+        digits = digits.slice(0, 2) + ':' + digits.slice(2, 4);
+      }
+      inp.value = digits;
+    }
+
+    function normalizeTime24hOnBlur(inp) {
+      let raw = (inp.value || "").trim().replace(/[hH.]/g, ':');
+      if (!raw) return;
+      let h = 0, m = 0;
+      if (/^\d{3,4}$/.test(raw)) {
+        if (raw.length === 3) { h = parseInt(raw.slice(0, 1), 10); m = parseInt(raw.slice(1, 3), 10); }
+        else { h = parseInt(raw.slice(0, 2), 10); m = parseInt(raw.slice(2, 4), 10); }
+      } else if (/^\d{1,2}:\d{1,2}$/.test(raw)) {
+        const parts = raw.split(':');
+        h = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10);
+      } else if (/^\d{1,2}$/.test(raw)) {
+        h = parseInt(raw, 10);
+        m = 0;
+      } else {
+        return;
+      }
+      if (isNaN(h) || h < 0) h = 0;
+      if (h > 23) h = 23;
+      if (isNaN(m) || m < 0) m = 0;
+      if (m > 59) m = 59;
+      inp.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function parse24hToDecimal(timeStr) {
+      if (!timeStr) return null;
+      const clean = String(timeStr).trim().replace(/[hH.]/g, ':');
+      let h = -1, m = -1;
+      if (/^\d{1,2}:\d{1,2}$/.test(clean)) {
+        const parts = clean.split(':');
+        h = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10);
+      } else if (/^\d{3,4}$/.test(clean)) {
+        if (clean.length === 3) {
+          h = parseInt(clean.slice(0, 1), 10);
+          m = parseInt(clean.slice(1, 3), 10);
+        } else {
+          h = parseInt(clean.slice(0, 2), 10);
+          m = parseInt(clean.slice(2, 4), 10);
+        }
+      } else {
+        return null;
+      }
+      if (isNaN(h) || h < 0 || h > 23 || isNaN(m) || m < 0 || m > 59) return null;
+      return h + (m / 60);
+    }
+
+    function updateSyncStatusBadge(state, text) {
+      const el = document.getElementById('cloudSyncStatusBadge');
+      if (!el) return;
+      if (state === "synced") {
+        el.style.background = "#dcfce7";
+        el.style.color = "#15803d";
+        el.style.borderColor = "#bbf7d0";
+        el.innerText = text || "☁️ Đã đồng bộ Sheet";
+      } else if (state === "syncing") {
+        el.style.background = "#dbeafe";
+        el.style.color = "#1d4ed8";
+        el.style.borderColor = "#bfdbfe";
+        el.innerText = text || "⏳ Đang đồng bộ...";
+      } else if (state === "error") {
+        el.style.background = "#fee2e2";
+        el.style.color = "#b91c1c";
+        el.style.borderColor = "#fecaca";
+        el.innerText = text || "⚠️ Lỗi đồng bộ (Đã lưu máy)";
+      } else {
+        el.style.background = "#f8fafc";
+        el.style.color = "#64748b";
+        el.style.borderColor = "#cbd5e1";
+        el.innerText = text || "💻 Lưu nội bộ";
+      }
+    }
+
+    // Tự động khởi tạo danh sách Năm động (Tự mở rộng khi sang 2027, 2028...)
+    function populateDynamicYearDropdowns() {
+      const curY = new Date().getFullYear();
+      const startY = 2025;
+      const endY = Math.max(2027, curY + 1);
+
+      document.querySelectorAll('.dynamic-year-select').forEach(sel => {
+        const prev = sel.value || String(curY);
+        let html = '';
+        for (let y = startY; y <= endY; y++) {
+          html += `<option value="${y}" ${String(y) === prev ? 'selected' : ''}>Năm ${y}</option>`;
+        }
+        sel.innerHTML = html;
+        if (!sel.value) sel.value = String(curY);
+      });
+
+      document.querySelectorAll('.dynamic-year-select-all').forEach(sel => {
+        const prev = sel.value || String(curY);
+        let html = `<option value="ALL">Tất cả năm</option>`;
+        for (let y = startY; y <= endY; y++) {
+          html += `<option value="${y}" ${String(y) === prev ? 'selected' : ''}>${y}</option>`;
+        }
+        sel.innerHTML = html;
+        if (!sel.value) sel.value = String(curY);
+      });
+    }
+
+    // Đồng bộ toàn bộ bộ lọc Tháng/Năm về đúng thời gian thực khi mở trang
+    function syncAllFiltersToRealTime() {
+      TODAY_STR = getTodayISO();
+      populateDynamicYearDropdowns();
+      const now = new Date();
+      const curM = String(now.getMonth() + 1);
+      const curMM = String(now.getMonth() + 1).padStart(2, '0');
+      const curY = String(now.getFullYear());
+
+      const m1 = document.getElementById('monthSelect');
+      if (m1) m1.value = curM;
+      const y1 = document.getElementById('yearSelectTab1');
+      if (y1) y1.value = curY;
+
+      const mEq = document.getElementById('monthSelectEquipDaily');
+      if (mEq) mEq.value = curM;
+      const yEq = document.getElementById('yearSelectEquipDaily');
+      if (yEq) yEq.value = curY;
+
+      ['filterMonthTab2', 'filterMonthTab3', 'filterMonthTab4', 'filterMonthTab6'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = curMM;
+      });
+      ['filterYearTab2', 'filterYearTab3', 'filterYearTab4', 'filterYearTab6'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = curY;
+      });
+    }
+
+    // Danh sách 6 Menu Hạng Mục chuẩn (Cho phép Admin sắp xếp & ẩn/hiện)
+    let navMenuItems = [
+      { id: "tab1", label: "📅 1 · Báo cáo nghỉ 44h Bộ Phận IQC", visible: true },
+      { id: "tab2", label: "⚙️ 2 · Báo cáo Lot phát sinh", visible: true },
+      { id: "tab3", label: "⚠️ 3 · Báo cáo Hàng NG chờ xử lý", visible: true },
+      { id: "tab4", label: "💰 4 · Tính phí Claim Fee NCC", visible: true },
+      { id: "tab5", label: "📐 5 · Quản lý mẫu & Thiết bị", visible: true },
+      { id: "tab6", label: "📋 6 · Giao việc & Đánh giá KPI", visible: true }
+    ];
+
+    // Danh sách Nhân sự (Admin PIN: 254291)
+    let USERS = [
+      { pin: "254291",   id: "GS.22846", name: "ĐỖ TRUNG KIÊN",       role: "Admin", basePhepOct: 6.0, canAssign: true },
+      { pin: "GS.21736", id: "GS.21736", name: "BÙI THÀNH CÔNG",      role: "IQC",   basePhepOct: 8.5, canAssign: true },
+      { pin: "GS.22562", id: "GS.22562", name: "NGUYỄN ÁNH NGỌC",     role: "IQC",   basePhepOct: 4.5, canAssign: false },
+      { pin: "GS.41474", id: "GS.41474", name: "BÙI THỊ HÀ",          role: "IQC",   basePhepOct: 5.0, canAssign: false },
+      { pin: "GS.49574", id: "GS.49574", name: "NGUYỄN THỊ THU THẢO", role: "IQC",   basePhepOct: 4.0, canAssign: false },
+      { pin: "GS.43242", id: "GS.43242", name: "BÙI THỊ KIM THOA",    role: "IQC",   basePhepOct: 1.0, canAssign: false },
+      { pin: "GS.47963", id: "GS.47963", name: "NÔNG THỊ VƯƠNG",      role: "IQC",   basePhepOct: 1.0, canAssign: false },
+      { pin: "GS.52459", id: "GS.52459", name: "PHÙNG THỊ HỌC",       role: "IQC",   basePhepOct: 5.0, canAssign: false },
+      { pin: "GS.52460", id: "GS.52460", name: "PHƯƠNG THỊ HUYỀN",    role: "IQC",   basePhepOct: 5.0, canAssign: false }
+    ];
+
+    let monthlyLeaveRecords = {};
+    let lotData = [];
+    let ngPendingData = [];
+    let claimData = [];
+    let sampleList = [];
+    let equipList = [];
+    let equipDailyMatrixData = {};
+    let taskList = [];
+
+    // ================= LƯU TRỮ TỰ ĐỘNG LOCALSTORAGE & ĐỒNG BỘ 2 CHIỀU GOOGLE SHEETS =================
+    function applyDataObjectToMemory(data) {
+      if (!data || typeof data !== 'object') return false;
+      if (data.systemPass && String(data.systemPass).trim() !== "") {
+        systemPass = String(data.systemPass).trim();
+        localStorage.setItem("IQC_GOLDSUN_SYS_PASS", systemPass);
+      }
+      if (Array.isArray(data.navMenuItems) && data.navMenuItems.length > 0) {
+        const validIds = ["tab1", "tab2", "tab3", "tab4", "tab5", "tab6"];
+        const filteredNav = data.navMenuItems.filter(item => validIds.includes(item.id));
+        if (filteredNav.length > 0) navMenuItems = filteredNav;
+      }
+      if (Array.isArray(data.USERS) && data.USERS.length > 0) USERS = data.USERS;
+      if (data.monthlyLeaveRecords) monthlyLeaveRecords = data.monthlyLeaveRecords;
+      if (Array.isArray(data.lotData)) lotData = data.lotData;
+      if (Array.isArray(data.ngPendingData)) ngPendingData = data.ngPendingData;
+      if (Array.isArray(data.claimData)) claimData = data.claimData;
+      if (Array.isArray(data.sampleList)) sampleList = data.sampleList;
+      if (Array.isArray(data.equipList)) equipList = data.equipList;
+      if (data.equipDailyMatrixData) equipDailyMatrixData = data.equipDailyMatrixData;
+      if (Array.isArray(data.taskList)) taskList = data.taskList;
+      return true;
+    }
+
+    function saveStateToLocal(syncUsersFlag = false) {
+      try {
+        TODAY_STR = getTodayISO();
+        const payload = {
+          updatedAt: new Date().toISOString(),
+          systemPass,
+          syncUsersFromWeb: syncUsersFlag,
+          navMenuItems,
+          USERS,
+          monthlyLeaveRecords,
+          lotData,
+          ngPendingData,
+          claimData,
+          sampleList,
+          equipList,
+          equipDailyMatrixData,
+          taskList
+        };
+        localStorage.setItem(STORAGE_KEY_ALL, JSON.stringify(payload));
+        renderDailyBulletin();
+        if (API_URL && API_URL.startsWith("https://script.google.com")) {
+          pushAllDataToCloud(false, syncUsersFlag);
+        } else {
+          updateSyncStatusBadge("local");
+        }
+      } catch (e) {}
+    }
+
+    function loadStateFromLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_ALL);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        applyDataObjectToMemory(data);
+      } catch (e) {}
+    }
+
+    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (ĐỒNG BỘ CẢ SHEET NHAN_SU_PIN VÀO WEB)
+    async function pullAllDataFromCloud(showAlert = false) {
+      if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
+        updateSyncStatusBadge("local");
+        return false;
+      }
+      updateSyncStatusBadge("syncing", "⏳ Đang tải từ Sheet...");
+      try {
+        const resp = await fetch(`${API_URL}?action=load&t=${Date.now()}`, { method: "GET" });
+        const json = await resp.json();
+        if (json && json.status === "ok" && json.data && Array.isArray(json.data.USERS)) {
+          applyDataObjectToMemory(json.data);
+          localStorage.setItem(STORAGE_KEY_ALL, JSON.stringify(json.data));
+          if (currentUser) {
+            const updatedMe = USERS.find(u => u.id === currentUser.id);
+            if (updatedMe) currentUser = updatedMe;
+          }
+          refreshAllViews();
+          updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
+          if (showAlert) alert("✅ Đã tải dữ liệu & danh sách PIN mới nhất từ Google Sheets!");
+          return true;
+        } else {
+          updateSyncStatusBadge("synced", "☁️ Sheet sẵn sàng");
+          return false;
+        }
+      } catch (err) {
+        updateSyncStatusBadge("error", "⚠️ Offline (Dùng bản lưu máy)");
+        if (showAlert) alert("Không thể tải từ Google Sheets (" + err.message + "). Hệ thống đang hiển thị bản lưu trên máy.");
+        return false;
+      }
+    }
+
+    // ================= QUẢN LÝ ĐỔI PASSWORD DASHBOARD & PIN NHÂN VIÊN (ADMIN) =================
+    function openSecurityModal() {
+      if (!currentUser || currentUser.role !== "Admin") return;
+      document.getElementById('cfgSystemPassInput').value = systemPass;
+      const tbody = document.getElementById('securityUsersBody');
+      tbody.innerHTML = '';
+      USERS.forEach((u, i) => {
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td>
+          <td style="font-weight:bold; color:var(--primary);">${u.id}</td>
+          <td><input type="text" class="form-control" id="secName_${i}" value="${u.name}" style="padding:4px 6px; font-size:12px;"></td>
+          <td>
+            <select class="form-control" id="secRole_${i}" style="padding:4px 6px; font-size:12px;">
+              <option value="IQC" ${u.role === 'IQC' ? 'selected' : ''}>IQC</option>
+              <option value="Admin" ${u.role === 'Admin' ? 'selected' : ''}>Admin</option>
+            </select>
+          </td>
+          <td><input type="text" class="form-control" id="secPin_${i}" value="${u.pin}" style="padding:4px 6px; font-size:12px; font-weight:bold; color:#b91c1c;"></td>
+          <td><input type="number" step="0.5" class="form-control" id="secPhep_${i}" value="${u.basePhepOct}" style="padding:4px 6px; font-size:12px; width:80px; margin:0 auto;"></td>
+        </tr>`;
+      });
+      openModal('securityModal');
+    }
+
+    function saveSecurityConfig() {
+      if (!currentUser || currentUser.role !== "Admin") return;
+      const newSysPass = document.getElementById('cfgSystemPassInput').value.trim();
+      if (!newSysPass) {
+        alert("Mật khẩu mở khóa Dashboard không được để trống!");
+        return;
+      }
+      systemPass = newSysPass;
+      localStorage.setItem("IQC_GOLDSUN_SYS_PASS", systemPass);
+
+      USERS.forEach((u, i) => {
+        const nameEl = document.getElementById(`secName_${i}`);
+        const roleEl = document.getElementById(`secRole_${i}`);
+        const pinEl = document.getElementById(`secPin_${i}`);
+        const phepEl = document.getElementById(`secPhep_${i}`);
+        if (nameEl && nameEl.value.trim()) u.name = nameEl.value.trim().toUpperCase();
+        if (roleEl) u.role = roleEl.value;
+        if (pinEl && pinEl.value.trim()) u.pin = pinEl.value.trim();
+        if (phepEl) u.basePhepOct = parseFloat(phepEl.value) || 0;
+      });
+
+      saveStateToLocal(true);
+      closeModal('securityModal');
+      refreshAllViews();
+      alert("✅ Đã cập nhật Password Dashboard & Mã PIN nhân viên thành công!");
+    }
+
+    // ================= BẢNG THÔNG BÁO & NHẮC VIỆC HÔM NAY (CẬP NHẬT THỜI GIAN THỰC) =================
+    function updateBulletinClockLabel() {
+      const now = new Date();
+      const latestISO = getTodayISO();
+      const dateChanged = (latestISO !== TODAY_STR);
+      TODAY_STR = latestISO;
+      const lbl = document.getElementById('bulletinTodayLabel');
+      if (lbl) {
+        const timeStr = now.toTimeString().slice(0, 8);
+        lbl.innerText = `${formatDateVN(TODAY_STR)} - ${timeStr}`;
+      }
+      if (dateChanged) {
+        populateDynamicYearDropdowns();
+        renderDailyBulletin();
+      }
+    }
+
+    function renderDailyBulletin() {
+      TODAY_STR = getTodayISO();
+      updateBulletinClockLabel();
+      const box = document.getElementById('bulletinChipsContainer');
+      if (!box) return;
+
+      const expSamples = sampleList.filter(r => {
+        const st = evaluateExpiryStatus(r.han).label;
+        return st === "Hết hạn" || st === "Sắp hết hạn";
+      }).length;
+
+      const expEquips = equipList.filter(r => {
+        const st = evaluateExpiryStatus(r.hanHC).label;
+        return st === "Hết hạn" || st === "Sắp hết hạn";
+      }).length;
+
+      const pendingNGs = ngPendingData.filter(r => r.hienTrang !== "Đã xử lý").length;
+      const urgentTasks = taskList.filter(tk => !tk.isDone && tk.hanChot && tk.hanChot <= TODAY_STR).length;
+      const activeTasks = taskList.filter(tk => !tk.isDone && (!tk.hanChot || tk.hanChot > TODAY_STR)).length;
+      const todayLots = lotData.filter(r => r.ngay === TODAY_STR).length;
+
+      let html = '';
+      if (expSamples > 0) {
+        html += `<span class="b-chip b-chip-danger" onclick="jumpToSection('tab5', 'subTab5_1')">🔴 ${expSamples} Bản mẫu hết/sắp hết hạn</span>`;
+      }
+      if (expEquips > 0) {
+        html += `<span class="b-chip b-chip-warn" onclick="jumpToSection('tab5', 'subTab5_2')">🔧 ${expEquips} Thiết bị cần hiệu chuẩn</span>`;
+      }
+      if (pendingNGs > 0) {
+        html += `<span class="b-chip b-chip-danger" onclick="jumpToSection('tab3')">⚠️ ${pendingNGs} Lot Hàng NG chờ xử lý</span>`;
+      }
+      if (urgentTasks > 0) {
+        html += `<span class="b-chip b-chip-danger" onclick="jumpToSection('tab6')">🚨 ${urgentTasks} Việc đến hạn / quá hạn</span>`;
+      }
+      if (activeTasks > 0) {
+        html += `<span class="b-chip b-chip-info" onclick="jumpToSection('tab6')">📋 ${activeTasks} Việc đang thực hiện</span>`;
+      }
+      if (todayLots > 0) {
+        html += `<span class="b-chip b-chip-warn" onclick="jumpToSection('tab2')">⚙️ ${todayLots} Lot phát sinh hôm nay</span>`;
+      }
+
+      if (!html) {
+        html = `<span class="b-chip b-chip-ok">✅ Tất cả mẫu chuẩn, thiết bị đo, hàng NG & công việc hôm nay đều trong trạng thái chuẩn (OK)</span>`;
+      }
+      box.innerHTML = html;
+    }
+
+    function jumpToSection(tabId, subTab5Id) {
+      const navEl = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+      switchTab(tabId, navEl);
+      if (tabId === 'tab5' && subTab5Id) {
+        const btns = document.querySelectorAll('#subTab5Container .sub-tab-btn');
+        const idx = subTab5Id === 'subTab5_1' ? 0 : (subTab5Id === 'subTab5_2' ? 1 : 2);
+        if (btns[idx]) switchSubTab5(subTab5Id, btns[idx]);
+      }
+    }
+
+    // ================= SIDEBAR MENU ĐỘNG & SẮP XẾP DANH MỤC (ADMIN) =================
+    function renderSidebarNav() {
+      const ul = document.getElementById('sidebarNavMenu');
+      if (!ul) return;
+      ul.innerHTML = '';
+      const visibleItems = navMenuItems.filter(item => item.visible !== false);
+      if (!visibleItems.some(x => x.id === currentActiveTabId) && visibleItems.length > 0) {
+        currentActiveTabId = visibleItems[0].id;
+      }
+      visibleItems.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'nav-item' + (item.id === currentActiveTabId ? ' active' : '');
+        li.setAttribute('data-tab', item.id);
+        li.innerText = item.label;
+        li.onclick = function() { switchTab(item.id, li); };
+        ul.appendChild(li);
+      });
+    }
+
+    function openMenuConfigModal() {
+      if (!currentUser || currentUser.role !== "Admin") return;
+      renderMenuConfigList();
+      openModal('menuConfigModal');
+    }
+
+    function renderMenuConfigList() {
+      const wrap = document.getElementById('menuConfigList');
+      wrap.innerHTML = '';
+      navMenuItems.forEach((item, idx) => {
+        wrap.innerHTML += `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid var(--border); border-radius:6px; background:#f8fafc;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; cursor:pointer;">
+              <input type="checkbox" ${item.visible !== false ? 'checked' : ''} onchange="toggleMenuVisible(${idx}, this.checked)">
+              <span>${item.label}</span>
+            </label>
+            <div style="display:flex; gap:4px;">
+              <button type="button" class="btn btn-outline" style="padding:3px 7px;" onclick="moveMenuOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>⬆️</button>
+              <button type="button" class="btn btn-outline" style="padding:3px 7px;" onclick="moveMenuOrder(${idx}, 1)" ${idx === navMenuItems.length - 1 ? 'disabled' : ''}>⬇️</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    function toggleMenuVisible(idx, isChecked) {
+      if (navMenuItems.filter(x => x.visible !== false).length <= 1 && !isChecked) {
+        alert("Phải giữ lại ít nhất 1 danh mục hiển thị!");
+        renderMenuConfigList();
+        return;
+      }
+      navMenuItems[idx].visible = isChecked;
+      saveStateToLocal();
+      renderSidebarNav();
+      switchTab(currentActiveTabId);
+    }
+
+    function moveMenuOrder(idx, dir) {
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= navMenuItems.length) return;
+      const temp = navMenuItems[idx];
+      navMenuItems[idx] = navMenuItems[targetIdx];
+      navMenuItems[targetIdx] = temp;
+      saveStateToLocal();
+      renderMenuConfigList();
+      renderSidebarNav();
+    }
+
+    // ================= 1. MỞ KHÓA DASHBOARD =================
+    async function unlockDashboard() {
+      const val = (document.getElementById('gatePass').value || "").trim();
+      if (val.toUpperCase() === systemPass.toUpperCase()) {
+        document.getElementById('gateOverlay').classList.add('hidden');
+        syncAllFiltersToRealTime();
+        refreshAllViews();
+        if (API_URL && API_URL.startsWith("https://script.google.com")) {
+          await pullAllDataFromCloud(false);
+        }
+      } else {
+        document.getElementById('gateErr').innerText = "Mật khẩu không đúng! Vui lòng nhập lại.";
+      }
+    }
+
+    function refreshAllViews() {
+      TODAY_STR = getTodayISO();
+      populateDynamicYearDropdowns();
+      renderSidebarNav();
+      renderDailyBulletin();
+      try { renderMatrix44h(); } catch (e) {}
+      try { populateFiltersTab2(); renderTab2(); } catch (e) {}
+      try { populateFiltersTab3(); renderTab3(); } catch (e) {}
+      try { populateFiltersTab4(); renderTab4(); } catch (e) {}
+      try { renderTab5Sample(); renderTab5Equip(); renderTab5DailyMatrix(); } catch (e) {}
+      try { initTab6Filters(); renderTab6All(); } catch (e) {}
+    }
+
+    // ================= 2. ĐỒNG HỒ ĐẾM NGƯỢC 20 PHÚT & CẬP NHẬT DỮ LIỆU =================
+    let remainingSeconds = 20 * 60;
+    setInterval(() => {
+      remainingSeconds--;
+      if (remainingSeconds <= 0) forceSyncAndReset(true);
+      const m = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+      const s = String(remainingSeconds % 60).padStart(2, '0');
+      const el = document.getElementById('countdownText');
+      if (el) el.innerText = `${m}:${s}`;
+      updateBulletinClockLabel();
+    }, 1000);
+
+    async function manualSyncNow() {
+      remainingSeconds = 20 * 60;
+      if (API_URL && API_URL.startsWith("https://script.google.com")) {
+        await pullAllDataFromCloud(false);
+      } else {
+        loadStateFromLocal();
+        refreshAllViews();
+      }
+    }
+
+    function forceSyncAndReset(isAuto = false) {
+      remainingSeconds = 20 * 60;
+      logoutPIN();
+      if (API_URL && API_URL.startsWith("https://script.google.com")) {
+        pullAllDataFromCloud(false);
+      } else {
+        refreshAllViews();
+      }
+      if (isAuto) alert("Đã hết 20 phút phiên làm việc! Hệ thống tự động đăng xuất PIN và làm mới dữ liệu.");
+    }
+
+    // ================= 3. TAB 1: KẾ THỪA PHÉP CÒN LẠI QUA CÁC THÁNG & CÁC NĂM (2026 -> 2027...) =================
+    function getLeaveRecordBucket(year, month) {
+      if (year === 2026 && monthlyLeaveRecords[month]) {
+        return monthlyLeaveRecords[month];
+      }
+      const key = `${year}_${month}`;
+      return monthlyLeaveRecords[key] || {};
+    }
+
+    function setLeaveRecordValue(year, month, empId, day, cleanVal) {
+      const key = (year === 2026) ? String(month) : `${year}_${month}`;
+      if (!monthlyLeaveRecords[key]) monthlyLeaveRecords[key] = {};
+      if (!monthlyLeaveRecords[key][empId]) monthlyLeaveRecords[key][empId] = {};
+      if (cleanVal === "") delete monthlyLeaveRecords[key][empId][day];
+      else monthlyLeaveRecords[key][empId][day] = cleanVal;
+    }
+
+    function getUsedPhepInYearMonth(y, m, empId) {
+      const bucket = getLeaveRecordBucket(y, m);
+      const rec = bucket[empId] || {};
+      let used = 0;
+      Object.values(rec).forEach(val => {
+        if (val === "NP") used += 1;
+        else if (val === "1/2P") used += 0.5;
+      });
+      return used;
+    }
+
+    function getStartingPhepForYearMonth(emp, targetYear, targetMonth) {
+      const diffMonths = (targetYear - 2026) * 12 + (targetMonth - 10);
+      if (diffMonths === 0) return emp.basePhepOct;
+      if (diffMonths > 0) {
+        let p = emp.basePhepOct;
+        let y = 2026, m = 10;
+        for (let step = 0; step < diffMonths; step++) {
+          const remainPrev = p - getUsedPhepInYearMonth(y, m, emp.id);
+          p = remainPrev + 1;
+          m++;
+          if (m > 12) { m = 1; y++; }
+        }
+        return p;
+      } else {
+        let p = emp.basePhepOct;
+        let y = 2026, m = 9;
+        for (let step = 0; step < Math.abs(diffMonths); step++) {
+          p = Math.max(0, p - 1 + getUsedPhepInYearMonth(y, m, emp.id));
+          m--;
+          if (m < 1) { m = 12; y--; }
+        }
+        return p;
+      }
+    }
+
+    function renderMatrix44h() {
+      const month = parseInt(document.getElementById('monthSelect').value) || (new Date().getMonth() + 1);
+      const yearEl = document.getElementById('yearSelectTab1');
+      const year = yearEl && yearEl.value ? parseInt(yearEl.value) : new Date().getFullYear();
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+      const isAdmin = currentUser && currentUser.role === "Admin";
+
+      const btnAddStaff = document.getElementById('btnAddStaffAdmin');
+      if (isAdmin) btnAddStaff.classList.remove('hidden');
+      else btnAddStaff.classList.add('hidden');
+
+      const bucket = getLeaveRecordBucket(year, month);
+
+      let hRow1 = `<tr>
+        <th rowspan="2" class="sticky-col-1">ID</th>
+        <th rowspan="2" class="sticky-col-2">Họ và tên</th>
+        <th rowspan="2">Phép<br>hiện tại</th>
+        <th rowspan="2">Phép<br>còn lại</th>
+        <th rowspan="2">Ngày<br>hưởng 44h</th>
+        <th rowspan="2">Nghỉ<br>K.Lương</th>`;
+      let hRow2 = `<tr>`;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dow = new Date(year, month - 1, d).getDay();
+        const isSun = dow === 0 ? 'weekend-col' : '';
+        hRow1 += `<th class="${isSun}">${d}</th>`;
+        hRow2 += `<th class="${isSun}">${dayNames[dow]}</th>`;
+      }
+      hRow1 += `</tr>`; hRow2 += `</tr>`;
+      document.getElementById('matrixHead').innerHTML = hRow1 + hRow2;
+
+      let bodyHtml = '';
+      let dailyCount = {};
+      for (let d = 1; d <= daysInMonth; d++) dailyCount[d] = 0;
+
+      USERS.forEach((emp, empIdx) => {
+        const empDays = bucket[emp.id] || {};
+        const pHienTai = getStartingPhepForYearMonth(emp, year, month);
+
+        let usedP = 0, count44h = 0, countKL = 0;
+        let daysHtml = '';
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const val = empDays[d] || "";
+          if (val === "NP") usedP += 1;
+          if (val === "1/2P") usedP += 0.5;
+          if (val === "44H") count44h += 1;
+          if (val === "KL") countKL += 1;
+          if (val !== "") dailyCount[d]++;
+
+          let tagClass = "";
+          if (val === "44H") tagClass = "tag-44H";
+          else if (val === "NP") tagClass = "tag-NP";
+          else if (val === "1/2P") tagClass = "tag-12P";
+          else if (val === "KL") tagClass = "tag-KL";
+
+          daysHtml += `<td class="cell-day ${tagClass}" onclick="openLeaveCellPicker(${year}, ${month}, '${emp.id}', '${emp.name}', ${d})">${val}</td>`;
+        }
+
+        const pRemain = pHienTai - usedP;
+        const delBtnHtml = isAdmin
+          ? `<button type="button" class="btn-icon-del" title="Xóa nhân viên (Admin)" onclick="deleteStaff44h(${empIdx})">🗑️</button>`
+          : ``;
+
+        bodyHtml += `<tr>
+          <td class="sticky-col-1">${emp.id}</td>
+          <td class="sticky-col-2">
+            <div class="emp-name-cell">
+              <span>${emp.name}</span>
+              ${delBtnHtml}
+            </div>
+          </td>
+          <td>${pHienTai}</td>
+          <td style="font-weight:bold; color:var(--primary);">${pRemain}</td>
+          <td style="font-weight:bold; color:#15803d;">${count44h}</td>
+          <td style="color:var(--danger);">${countKL}</td>
+          ${daysHtml}
+        </tr>`;
+      });
+      document.getElementById('matrixBody').innerHTML = bodyHtml;
+
+      let footHtml = `<tr style="background:#f1f5f9; font-weight:bold;">
+        <td colspan="6" style="text-align:right; padding-right:10px;">Tổng số người nghỉ trong ngày (${USERS.length} NV):</td>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const c = dailyCount[d];
+        footHtml += `<td style="color:${c > 3 ? 'var(--danger)' : 'var(--text)'}">${c}</td>`;
+      }
+      footHtml += `</tr>`;
+      document.getElementById('matrixFoot').innerHTML = footHtml;
+    }
+
+    function openLeaveCellPicker(year, month, empId, empName, day) {
+      if (!currentUser) {
+        alert("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi sửa đổi đăng ký nghỉ!");
+        openPinModal();
+        return;
+      }
+      activeLeaveCell = { year, month, empId, day };
+      document.getElementById('leaveCellTitle').innerText = `${empName} - Ngày ${String(day).padStart(2,'0')}/${String(month).padStart(2,'0')}/${year}`;
+      openModal('leaveCellModal');
+    }
+
+    function applyLeaveValue(val) {
+      if (!activeLeaveCell) return;
+      const { year, month, empId, day } = activeLeaveCell;
+      const cleanVal = String(val).trim().toUpperCase();
+      setLeaveRecordValue(year, month, empId, day, cleanVal);
+      saveStateToLocal();
+      closeModal('leaveCellModal');
+      renderMatrix44h();
+    }
+
+    function openAddStaffModal() {
+      document.getElementById('stId').value = "";
+      document.getElementById('stName').value = "";
+      document.getElementById('stPhep').value = "";
+      document.getElementById('stRole').value = "IQC";
+      openModal('staffModal');
+    }
+
+    function deleteStaff44h(empIdx) {
+      if (!currentUser || currentUser.role !== "Admin") return;
+      askDeleteConfirm(() => {
+        USERS.splice(empIdx, 1);
+        saveStateToLocal(true);
+        renderMatrix44h();
+        try { renderTab6All(); } catch (e) {}
+      });
+    }
+
+    function saveNewStaff() {
+      if (!currentUser || currentUser.role !== "Admin") return;
+      let id = document.getElementById('stId').value.trim().toUpperCase();
+      if (!id.startsWith("GS.")) id = "GS." + id;
+      const name = document.getElementById('stName').value.trim().toUpperCase();
+      const pTon = parseFloat(document.getElementById('stPhep').value) || 0;
+      const roleVal = (document.getElementById('stRole').value === "Admin") ? "Admin" : "IQC";
+      if (!id || !name) { alert("Vui lòng nhập đầy đủ Mã NV và Họ tên!"); return; }
+      if (USERS.some(u => String(u.id).toUpperCase() === id || String(u.pin).toUpperCase() === id)) { alert("Mã nhân viên / PIN này đã tồn tại trong hệ thống!"); return; }
+      USERS.push({ pin: id, id: id, name: name, role: roleVal, basePhepOct: pTon, canAssign: (roleVal === "Admin") });
+      saveStateToLocal(true);
+      closeModal('staffModal');
+      renderMatrix44h();
+      try { renderTab6All(); } catch (e) {}
+    }
+
+    // ================= 4. HÀM KIỂM TRA THÁNG / NĂM & HẠN SỬ DỤNG =================
+    function matchMonthAndYear(dateStr, selectedMonth, selectedYear) {
+      if (!dateStr) return true;
+      const parts = String(dateStr).split('-');
+      if (parts.length < 2) return true;
+      const y = parts[0];
+      const m = parts[1].padStart(2, '0');
+      const okY = (!selectedYear || selectedYear === "ALL" || y === selectedYear);
+      const okM = (!selectedMonth || selectedMonth === "ALL" || m === selectedMonth);
+      return okY && okM;
+    }
+
+    function evaluateExpiryStatus(expDateStr) {
+      if (!expDateStr) return { label: "Còn hạn", sub: "Chưa đặt hạn", cls: "st-valid" };
+      const today = new Date(getTodayISO() + "T00:00:00");
+      const exp = new Date(expDateStr + "T00:00:00");
+      const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return { label: "Hết hạn", sub: `Quá hạn ${Math.abs(diffDays)} ngày`, cls: "st-expired" };
+      if (diffDays <= 15) return { label: "Sắp hết hạn", sub: `Còn ${diffDays} ngày`, cls: "st-warn" };
+      return { label: "Còn hạn", sub: `Còn ${diffDays} ngày`, cls: "st-valid" };
+    }
+
+    // ================= 5. TAB 2: LOT PHÁT SINH CÔNG ĐOẠN =================
+    let chart1 = null, chart2 = null;
+
+    function populateFiltersTab2() {
+      const selNCC = document.getElementById('filterNCCTab2');
+      const selCD = document.getElementById('filterCDTab2');
+      const curNCC = selNCC.value || "ALL";
+      const curCD = selCD.value || "ALL";
+      const nccs = [...new Set(lotData.map(x => x.ncc).filter(Boolean))];
+      const cds = [...new Set(lotData.map(x => x.cd).filter(Boolean))];
+      selNCC.innerHTML = `<option value="ALL">Tất cả NCC</option>` + nccs.map(n => `<option value="${n}">${n}</option>`).join('');
+      selCD.innerHTML = `<option value="ALL">Tất cả CĐ</option>` + cds.map(c => `<option value="${c}">${c}</option>`).join('');
+      selNCC.value = nccs.includes(curNCC) ? curNCC : "ALL";
+      selCD.value = cds.includes(curCD) ? curCD : "ALL";
+    }
+
+    function getFilteredLotData() {
+      const fMonth = document.getElementById('filterMonthTab2').value;
+      const fYear = document.getElementById('filterYearTab2').value;
+      const fNCC = document.getElementById('filterNCCTab2').value;
+      const fCD = document.getElementById('filterCDTab2').value;
+      return lotData.filter(r => matchMonthAndYear(r.ngay, fMonth, fYear) && (fNCC === "ALL" || r.ncc === fNCC) && (fCD === "ALL" || r.cd === fCD));
+    }
+
+    function renderTab2() {
+      const filtered = getFilteredLotData();
+      const tbody = document.getElementById('bodyTab2');
+      tbody.innerHTML = '';
+      filtered.forEach((r, i) => {
+        const origIdx = lotData.indexOf(r);
+        const rate = r.slKiem > 0 ? ((r.slNG / r.slKiem) * 100).toFixed(2) + "%" : "0.00%";
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${r.code}</td>
+          <td>${r.tenNVL}</td><td>${r.ncc}</td><td>${r.cd}</td>
+          <td>${Number(r.slKiem).toLocaleString()}</td><td style="color:var(--danger);font-weight:bold">${Number(r.slNG).toLocaleString()}</td>
+          <td style="color:var(--danger);font-weight:bold">${rate}</td><td>${r.loi}</td>
+          <td>${r.bienPhap}</td><td><b>${r.nguoiXN}</b></td>
+          <td class="no-capture">
+            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditLotModal(${origIdx}))">✏ Sửa</button>
+            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteLotRow(${origIdx})">🗑️</button>` : ""}
+          </td>
+        </tr>`;
+      });
+      updateChartsTab2(filtered);
+    }
+
+    function updateChartsTab2(filtered = getFilteredLotData()) {
+      if (typeof Chart === 'undefined') return;
+      const ctx1 = document.getElementById('chartLotByNCC');
+      const ctx2 = document.getElementById('chartLotByStage');
+      if (chart1) chart1.destroy();
+      if (chart2) chart2.destroy();
+
+      const labelsNCC = [...new Set(filtered.map(x => x.ncc).filter(Boolean))];
+      const countByNCC = labelsNCC.map(n => filtered.filter(x => x.ncc === n).length);
+
+      chart1 = new Chart(ctx1, {
+        type: 'bar',
+        data: { labels: labelsNCC, datasets: [{ data: countByNCC, backgroundColor: '#15803d', borderRadius: 4 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Thống Kê Số Lần Phát Sinh Của Nhà Cung Cấp', font: { size: 13, weight: 'bold' }, color: '#1e293b' },
+            datalabels: { color: '#fff', font: { weight: 'bold', size: 12 }, formatter: val => `${val} lần` }
+          }
+        }
+      });
+
+      const labelsCD = [...new Set(filtered.map(x => x.cd).filter(Boolean))];
+      const dataCD = labelsCD.map(c => filtered.filter(x => x.cd === c).length);
+      const totalCD = dataCD.reduce((a, b) => a + b, 0);
+
+      chart2 = new Chart(ctx2, {
+        type: 'doughnut',
+        data: { labels: labelsCD, datasets: [{ data: dataCD, backgroundColor: ['#1b5e20', '#eab308', '#dc2626', '#2563eb', '#9333ea'] }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Công Đoạn Phát Sinh', font: { size: 13, weight: 'bold' }, color: '#1e293b' },
+            datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: val => `${val} (${totalCD > 0 ? ((val/totalCD)*100).toFixed(1) : 0}%)` }
+          }
+        }
+      });
+    }
+
+    function calcLotRatio() {
+      const kiem = parseFloat(document.getElementById('fLotSLKiem').value) || 0;
+      const ng = parseFloat(document.getElementById('fLotSLNG').value) || 0;
+      document.getElementById('fLotTiLePreview').value = (kiem > 0 ? ((ng / kiem) * 100).toFixed(2) : "0.00") + "%";
+    }
+
+    function openAddLotModal() {
+      TODAY_STR = getTodayISO();
+      document.getElementById('lotModalTitle').innerText = "Nhập Mới Lot Phát Sinh Công Đoạn";
+      document.getElementById('lotEditIdx').value = "-1";
+      document.getElementById('fLotNgay').value = TODAY_STR;
+      document.getElementById('fLotCode').value = "";
+      document.getElementById('fLotTenNVL').value = "";
+      document.getElementById('fLotNCC').value = "";
+      document.getElementById('fLotCD').value = "";
+      document.getElementById('fLotSLKiem').value = "";
+      document.getElementById('fLotSLNG').value = "";
+      document.getElementById('fLotTiLePreview').value = "0.00%";
+      document.getElementById('fLotLoi').value = "";
+      document.getElementById('fLotBienPhap').value = "";
+      openModal('lotModal');
+    }
+
+    function openEditLotModal(idx) {
+      const r = lotData[idx];
+      document.getElementById('lotModalTitle').innerText = "Chỉnh Sửa Lot Phát Sinh: " + r.code;
+      document.getElementById('lotEditIdx').value = idx;
+      document.getElementById('fLotNgay').value = r.ngay;
+      document.getElementById('fLotCode').value = r.code;
+      document.getElementById('fLotTenNVL').value = r.tenNVL;
+      document.getElementById('fLotNCC').value = r.ncc;
+      document.getElementById('fLotCD').value = r.cd;
+      document.getElementById('fLotSLKiem').value = r.slKiem;
+      document.getElementById('fLotSLNG').value = r.slNG;
+      calcLotRatio();
+      document.getElementById('fLotLoi').value = r.loi;
+      document.getElementById('fLotBienPhap').value = r.bienPhap;
+      openModal('lotModal');
+    }
+
+    function saveLotForm() {
+      const code = document.getElementById('fLotCode').value.trim();
+      if (!code) { alert("Vui lòng nhập Mã Code!"); return; }
+      const idx = parseInt(document.getElementById('lotEditIdx').value);
+      const ngayVal = document.getElementById('fLotNgay').value || getTodayISO();
+      const item = {
+        ngay: ngayVal,
+        code,
+        tenNVL: document.getElementById('fLotTenNVL').value.trim(),
+        ncc: document.getElementById('fLotNCC').value.trim(),
+        cd: document.getElementById('fLotCD').value.trim(),
+        slKiem: parseFloat(document.getElementById('fLotSLKiem').value) || 0,
+        slNG: parseFloat(document.getElementById('fLotSLNG').value) || 0,
+        loi: document.getElementById('fLotLoi').value.trim(),
+        bienPhap: document.getElementById('fLotBienPhap').value.trim(),
+        nguoiXN: currentUser.name
+      };
+      if (idx === -1) lotData.unshift(item); else lotData[idx] = item;
+
+      const [addedYear, addedMonth] = ngayVal.split('-');
+      const fMonthEl = document.getElementById('filterMonthTab2');
+      const fYearEl = document.getElementById('filterYearTab2');
+      if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
+      if (fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
+
+      saveStateToLocal();
+      closeModal('lotModal'); populateFiltersTab2(); renderTab2();
+    }
+
+    function deleteLotRow(idx) {
+      askDeleteConfirm(() => {
+        lotData.splice(idx, 1);
+        saveStateToLocal();
+        populateFiltersTab2(); renderTab2();
+      });
+    }
+
+    // ================= 6. TAB 3: HÀNG NG CHỜ XỬ LÝ =================
+    let chart3 = null, chart4 = null;
+
+    function populateFiltersTab3() {
+      const selNCC = document.getElementById('filterNCCTab3');
+      const curNCC = selNCC.value || "ALL";
+      const nccs = [...new Set(ngPendingData.map(x => x.ncc).filter(Boolean))];
+      selNCC.innerHTML = `<option value="ALL">Tất cả NCC</option>` + nccs.map(n => `<option value="${n}">${n}</option>`).join('');
+      selNCC.value = nccs.includes(curNCC) ? curNCC : "ALL";
+    }
+
+    function getFilteredNGData() {
+      const fMonth = document.getElementById('filterMonthTab3').value;
+      const fYear = document.getElementById('filterYearTab3').value;
+      const fNCC = document.getElementById('filterNCCTab3').value;
+      const fSt = document.getElementById('filterStatusTab3').value;
+      return ngPendingData.filter(r => matchMonthAndYear(r.ngay, fMonth, fYear) && (fNCC === "ALL" || r.ncc === fNCC) && (fSt === "ALL" || r.hienTrang === fSt));
+    }
+
+    function renderTab3() {
+      const filtered = getFilteredNGData();
+      const tbody = document.getElementById('bodyTab3');
+      tbody.innerHTML = '';
+      filtered.forEach((r, i) => {
+        const origIdx = ngPendingData.indexOf(r);
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${r.maHang}</td>
+          <td>${r.loaiHang}</td><td>${r.ncc}</td><td style="color:var(--danger);font-weight:bold">${Number(r.slNG).toLocaleString()}</td>
+          <td>${r.loi}</td><td><b>${r.hienTrang}</b></td><td>${r.nguoiXN}</td><td>${r.ghiChu}</td>
+          <td>${r.img ? `<img src="${r.img}" class="thumb-img" onclick="window.open('${r.img}')">` : '—'}</td>
+          <td class="no-capture">
+            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditNGModal(${origIdx}))">✏ Sửa</button>
+            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteNGRow(${origIdx})">🗑️</button>` : ""}
+          </td>
+        </tr>`;
+      });
+      updateChartsTab3(filtered);
+    }
+
+    function updateChartsTab3(filtered = getFilteredNGData()) {
+      if (typeof Chart === 'undefined') return;
+      const ctx3 = document.getElementById('chartNGStatus');
+      const ctx4 = document.getElementById('chartNGSupplier');
+      if (chart3) chart3.destroy();
+      if (chart4) chart4.destroy();
+
+      const statuses = ["Chưa xử lý", "Đang xử lý", "Đã xử lý"];
+      const counts = statuses.map(s => filtered.filter(x => x.hienTrang === s).length);
+      const totalSt = counts.reduce((a, b) => a + b, 0);
+
+      chart3 = new Chart(ctx3, {
+        type: 'pie',
+        data: { labels: statuses, datasets: [{ data: counts, backgroundColor: ['#dc2626', '#eab308', '#16a34a'] }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Tỷ Lệ Trạng Thái Các Lot Hàng NG', font: { size: 13, weight: 'bold' }, color: '#1e293b' },
+            datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: val => val === 0 ? '' : `${val} lot (${((val/totalSt)*100).toFixed(1)}%)` }
+          }
+        }
+      });
+
+      const nccs = [...new Set(filtered.map(x => x.ncc).filter(Boolean))];
+      const pendingLotCounts = nccs.map(n => filtered.filter(x => x.ncc === n && x.hienTrang !== "Đã xử lý").length);
+
+      chart4 = new Chart(ctx4, {
+        type: 'bar',
+        data: { labels: nccs, datasets: [{ data: pendingLotCounts, backgroundColor: '#dc2626', borderRadius: 4 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Đếm Số Lần / Lot Chưa Xử Lý Theo NCC', font: { size: 13, weight: 'bold' }, color: '#1e293b' },
+            datalabels: { color: '#fff', font: { weight: 'bold', size: 12 }, formatter: val => val > 0 ? `${val} lot` : '' }
+          }
+        }
+      });
+    }
+
+    function openAddNGModal() {
+      TODAY_STR = getTodayISO();
+      document.getElementById('ngModalTitle').innerText = "Nhập Mới Hàng NG Chờ Xử Lý";
+      document.getElementById('ngEditIdx').value = "-1";
+      document.getElementById('fNgNgay').value = TODAY_STR;
+      document.getElementById('fNgMaHang').value = "";
+      document.getElementById('fNgLoaiHang').value = "";
+      document.getElementById('fNgNCC').value = "";
+      document.getElementById('fNgSL').value = "";
+      document.getElementById('fNgHienTrang').value = "Chưa xử lý";
+      document.getElementById('fNgLoi').value = "";
+      document.getElementById('fNgGhiChu').value = "";
+      setPreviewImage('ngPastePreview', "");
+      openModal('ngModal');
+    }
+
+    function openEditNGModal(idx) {
+      const r = ngPendingData[idx];
+      document.getElementById('ngModalTitle').innerText = "Cập Nhật Hàng NG: " + r.maHang;
+      document.getElementById('ngEditIdx').value = idx;
+      document.getElementById('fNgNgay').value = r.ngay;
+      document.getElementById('fNgMaHang').value = r.maHang;
+      document.getElementById('fNgLoaiHang').value = r.loaiHang;
+      document.getElementById('fNgNCC').value = r.ncc;
+      document.getElementById('fNgSL').value = r.slNG;
+      document.getElementById('fNgHienTrang').value = r.hienTrang;
+      document.getElementById('fNgLoi').value = r.loi;
+      document.getElementById('fNgGhiChu').value = r.ghiChu;
+      setPreviewImage('ngPastePreview', r.img || "");
+      openModal('ngModal');
+    }
+
+    function saveNGForm() {
+      const maHang = document.getElementById('fNgMaHang').value.trim();
+      if (!maHang) { alert("Vui lòng nhập Mã Hàng!"); return; }
+      const idx = parseInt(document.getElementById('ngEditIdx').value);
+      const ngayVal = document.getElementById('fNgNgay').value || getTodayISO();
+      const item = {
+        ngay: ngayVal,
+        maHang,
+        loaiHang: document.getElementById('fNgLoaiHang').value.trim(),
+        ncc: document.getElementById('fNgNCC').value.trim(),
+        slNG: parseFloat(document.getElementById('fNgSL').value) || 0,
+        hienTrang: document.getElementById('fNgHienTrang').value,
+        loi: document.getElementById('fNgLoi').value.trim(),
+        ghiChu: document.getElementById('fNgGhiChu').value.trim(),
+        nguoiXN: currentUser.name,
+        img: tempBase64
+      };
+      if (idx === -1) ngPendingData.unshift(item); else ngPendingData[idx] = item;
+
+      const [addedYear, addedMonth] = ngayVal.split('-');
+      const fMonthEl = document.getElementById('filterMonthTab3');
+      const fYearEl = document.getElementById('filterYearTab3');
+      if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
+      if (fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
+
+      saveStateToLocal();
+      closeModal('ngModal'); populateFiltersTab3(); renderTab3();
+    }
+
+    function deleteNGRow(idx) {
+      askDeleteConfirm(() => {
+        ngPendingData.splice(idx, 1);
+        saveStateToLocal();
+        populateFiltersTab3(); renderTab3();
+      });
+    }
+
+    // ================= 7. TAB 4: TÍNH PHÍ CLAIM FEE NCC (ĐÃ FIX TỰ ĐỘNG NHẢY SỐ GIỜ LỌC KỂ CẢ KHI CHƯA NHẬP SỐ NGƯỜI) =================
+    function generateAutoNCRForDate(dateStr) {
+      const dStr = dateStr || getTodayISO();
+      const ymd = dStr.replace(/-/g, "");
+      const prefix = `NCR-I-${ymd}-`;
+
+      let maxSeq = 0;
+      let sameDayCount = 0;
+      claimData.forEach(item => {
+        const ncrStr = String(item.ncr || "").trim().toUpperCase();
+        if (item.ngay === dStr || ncrStr.startsWith(prefix)) {
+          sameDayCount++;
+          const m = ncrStr.match(/(\d+)\s*$/);
+          if (m) {
+            const num = parseInt(m[1], 10);
+            if (!isNaN(num) && num > maxSeq) maxSeq = num;
+          }
+        }
+      });
+
+      const nextSeq = Math.max(maxSeq, sameDayCount) + 1;
+      return `${prefix}${String(nextSeq).padStart(3, '0')}`;
+    }
+
+    function previewAutoNCRByDate() {
+      const idx = parseInt(document.getElementById('claimEditIdx').value);
+      if (idx !== -1) return;
+      const dStr = document.getElementById('fClNgay').value || getTodayISO();
+      document.getElementById('fClNCR').value = generateAutoNCRForDate(dStr);
+    }
+
+    function populateFiltersTab4() {
+      const sel = document.getElementById('filterNCCTab4');
+      const cur = sel.value || "ALL";
+      const nccs = [...new Set(claimData.map(x => x.ncc).filter(Boolean))];
+      sel.innerHTML = `<option value="ALL">Tất cả Nhà Gia Công / NCC</option>` + nccs.map(n => `<option value="${n}">${n}</option>`).join('');
+      sel.value = nccs.includes(cur) ? cur : "ALL";
+    }
+
+    function renderTab4() {
+      const fMonth = document.getElementById('filterMonthTab4').value;
+      const fYear = document.getElementById('filterYearTab4') ? document.getElementById('filterYearTab4').value : "ALL";
+      const fNCC = document.getElementById('filterNCCTab4').value;
+      const filtered = claimData.filter(r => matchMonthAndYear(r.ngay, fMonth, fYear) && (fNCC === "ALL" || r.ncc === fNCC));
+
+      const tbody = document.getElementById('bodyTab4');
+      tbody.innerHTML = '';
+      let sumTienLoc = 0, sumTienHang = 0, sumTongChiPhi = 0;
+
+      filtered.forEach((r, i) => {
+        const origIdx = claimData.indexOf(r);
+        const slOK = Math.max(0, r.slVao - r.slNG);
+        const pctNG = r.slVao > 0 ? ((r.slNG / r.slVao) * 100).toFixed(2) + "%" : "0.00%";
+        const tienLoc = Math.round(r.tongGio * r.giaLoc);
+        const tienHang = Math.round(r.tienHang || 0);
+        const tongCP = tienLoc + tienHang;
+
+        sumTienLoc += tienLoc;
+        sumTienHang += tienHang;
+        sumTongChiPhi += tongCP;
+
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td>
+          <td>${formatDateVN(r.ngay)}</td>
+          <td><b>${r.ncc}</b></td>
+          <td>${r.ncr}</td>
+          <td style="font-weight:bold; color:var(--primary)">${r.code}</td>
+          <td>${Number(r.slVao).toLocaleString()}</td>
+          <td>${Number(slOK).toLocaleString()}</td>
+          <td style="color:var(--danger); font-weight:bold;">${Number(r.slNG).toLocaleString()}</td>
+          <td style="color:var(--danger); font-weight:bold;">${pctNG}</td>
+          <td>${r.loi}</td>
+          <td>${r.soNguoi}</td>
+          <td>${r.tStart || '—'}</td>
+          <td>${r.tEnd || '—'}</td>
+          <td style="font-weight:bold;">${Number(r.tongGio).toFixed(2)}</td>
+          <td>${Number(r.giaLoc).toLocaleString()}</td>
+          <td style="font-weight:bold;">${tienLoc.toLocaleString()}</td>
+          <td>${tienHang > 0 ? tienHang.toLocaleString() : '-'}</td>
+          <td style="font-weight:800; color:var(--danger);">${tongCP.toLocaleString()}</td>
+          <td class="no-capture">
+            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditClaimModal(${origIdx}))">✏ Sửa</button>
+            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteClaimRow(${origIdx})">🗑️</button>` : ""}
+          </td>
+        </tr>`;
+      });
+
+      document.getElementById('footTab4').innerHTML = `<tr style="background:#fef2f2; font-weight:800; font-size:12px;">
+        <td colspan="15" style="text-align:right; padding-right:12px; color:var(--primary);">TỔNG CỘNG CHI PHÍ CLAIM FEE (VND):</td>
+        <td style="color:var(--primary);">${sumTienLoc.toLocaleString()}</td>
+        <td>${sumTienHang > 0 ? sumTienHang.toLocaleString() : '-'}</td>
+        <td style="color:var(--danger); font-size:13px;">${sumTongChiPhi.toLocaleString()} VNĐ</td>
+        <td class="no-capture"></td>
+      </tr>`;
+    }
+
+    function calcClaimPreview() {
+      const rawNguoi = parseFloat(document.getElementById('fClSoNguoi').value);
+      const soNguoi = (!isNaN(rawNguoi) && rawNguoi > 0) ? rawNguoi : 1;
+      const dec1 = parse24hToDecimal(document.getElementById('fClStart').value);
+      const dec2 = parse24hToDecimal(document.getElementById('fClEnd').value);
+      if (dec1 !== null && dec2 !== null) {
+        let diffHours = dec2 - dec1;
+        if (diffHours <= 0) diffHours += 24;
+        const totalHours = Number((diffHours * soNguoi).toFixed(2));
+        document.getElementById('fClTongGio').value = totalHours;
+      }
+      calcClaimTotalOnly();
+    }
+
+    function calcClaimTotalOnly() {
+      const tongGio = parseFloat(document.getElementById('fClTongGio').value) || 0;
+      const giaLocInput = document.getElementById('fClDonGiaLoc').value;
+      const giaLoc = giaLocInput !== "" ? (parseFloat(giaLocInput) || 0) : 60052;
+      const tienHang = parseFloat(document.getElementById('fClTienHang').value) || 0;
+      const total = Math.round(tongGio * giaLoc + tienHang);
+      document.getElementById('fClTongTienPreview').value = total.toLocaleString() + " VNĐ";
+    }
+
+    function openAddClaimModal() {
+      const today = getTodayISO();
+      TODAY_STR = today;
+      document.getElementById('claimModalTitle').innerText = "Nhập Phiếu Tính Claim Fee Nhà Cung Cấp";
+      document.getElementById('claimEditIdx').value = "-1";
+      document.getElementById('fClNgay').value = today;
+      document.getElementById('fClNCC').value = "";
+      document.getElementById('fClNCR').value = generateAutoNCRForDate(today);
+      document.getElementById('fClCode').value = "";
+      document.getElementById('fClSLVao').value = "";
+      document.getElementById('fClSLNG').value = "";
+      document.getElementById('fClLoi').value = "";
+      document.getElementById('fClSoNguoi').value = "";
+      document.getElementById('fClStart').value = "";
+      document.getElementById('fClEnd').value = "";
+      document.getElementById('fClTongGio').value = "";
+      document.getElementById('fClDonGiaLoc').value = "";
+      document.getElementById('fClTienHang').value = "";
+      document.getElementById('fClTongTienPreview').value = "0 VNĐ";
+      openModal('claimModal');
+    }
+
+    function openEditClaimModal(idx) {
+      const r = claimData[idx];
+      document.getElementById('claimModalTitle').innerText = "Sửa Phiếu Claim Fee: " + r.ncr;
+      document.getElementById('claimEditIdx').value = idx;
+      document.getElementById('fClNgay').value = r.ngay;
+      document.getElementById('fClNCC').value = r.ncc;
+      document.getElementById('fClNCR').value = r.ncr;
+      document.getElementById('fClCode').value = r.code;
+      document.getElementById('fClSLVao').value = r.slVao;
+      document.getElementById('fClSLNG').value = r.slNG;
+      document.getElementById('fClLoi').value = r.loi;
+      document.getElementById('fClSoNguoi').value = r.soNguoi;
+      document.getElementById('fClStart').value = r.tStart;
+      document.getElementById('fClEnd').value = r.tEnd;
+      document.getElementById('fClTongGio').value = r.tongGio;
+      document.getElementById('fClDonGiaLoc').value = r.giaLoc;
+      document.getElementById('fClTienHang').value = r.tienHang || "";
+      calcClaimTotalOnly();
+      openModal('claimModal');
+    }
+
+    function saveClaimForm() {
+      normalizeTime24hOnBlur(document.getElementById('fClStart'));
+      normalizeTime24hOnBlur(document.getElementById('fClEnd'));
+      calcClaimPreview();
+
+      const code = document.getElementById('fClCode').value.trim();
+      const ncc = document.getElementById('fClNCC').value.trim().toUpperCase();
+      const ngayVal = document.getElementById('fClNgay').value || getTodayISO();
+      if (!code || !ncc) { alert("Vui lòng nhập Nhà Cung Cấp và Mã Sản Phẩm!"); return; }
+
+      const idx = parseInt(document.getElementById('claimEditIdx').value);
+      const ncrVal = document.getElementById('fClNCR').value.trim() || generateAutoNCRForDate(ngayVal);
+      const giaLocInput = document.getElementById('fClDonGiaLoc').value;
+      const rawNguoi = parseFloat(document.getElementById('fClSoNguoi').value);
+      const item = {
+        ngay: ngayVal,
+        ncc,
+        ncr: ncrVal,
+        code,
+        slVao: parseFloat(document.getElementById('fClSLVao').value) || 0,
+        slNG: parseFloat(document.getElementById('fClSLNG').value) || 0,
+        loi: document.getElementById('fClLoi').value.trim(),
+        soNguoi: (!isNaN(rawNguoi) && rawNguoi > 0) ? rawNguoi : 1,
+        tStart: document.getElementById('fClStart').value || "",
+        tEnd: document.getElementById('fClEnd').value || "",
+        tongGio: parseFloat(document.getElementById('fClTongGio').value) || 0,
+        giaLoc: giaLocInput !== "" ? (parseFloat(giaLocInput) || 0) : 60052,
+        tienHang: parseFloat(document.getElementById('fClTienHang').value) || 0
+      };
+
+      if (idx === -1) claimData.unshift(item);
+      else claimData[idx] = item;
+
+      const [addedYear, addedMonth] = ngayVal.split('-');
+      const fMonthEl = document.getElementById('filterMonthTab4');
+      const fYearEl = document.getElementById('filterYearTab4');
+      if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
+      if (fYearEl && fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
+      document.getElementById('filterNCCTab4').value = "ALL";
+
+      saveStateToLocal();
+      closeModal('claimModal');
+      populateFiltersTab4();
+      renderTab4();
+    }
+
+    function deleteClaimRow(idx) {
+      askDeleteConfirm(() => {
+        claimData.splice(idx, 1);
+        saveStateToLocal();
+        populateFiltersTab4(); renderTab4();
+      });
+    }
+
+    // ================= 8. TAB 5: 3 TAB CON + BÁO CÁO LINE NGANG TỰ ĐỘNG LINK TỪ EQUIPLIST =================
+    function switchSubTab5(subId, btn) {
+      document.querySelectorAll('.sub-tab5-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(subId).classList.remove('hidden');
+      btn.classList.add('active');
+      if (subId === 'subTab5_1') renderTab5Sample();
+      if (subId === 'subTab5_2') renderTab5Equip();
+      if (subId === 'subTab5_3') renderTab5DailyMatrix();
+    }
+
+    function renderTab5Sample() {
+      const fLoai = document.getElementById('filterLoaiHangSample').value;
+      const fSt = document.getElementById('filterStatusSample').value;
+      const tbody = document.getElementById('bodyTab5Sample');
+      tbody.innerHTML = '';
+
+      const filtered = sampleList.filter(r => {
+        const stObj = evaluateExpiryStatus(r.han);
+        return (fLoai === "ALL" || r.loaiHang === fLoai) && (fSt === "ALL" || stObj.label === fSt);
+      });
+
+      if (sampleList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="padding:22px; color:#64748b; font-style:italic; text-align:center;">Chưa có bản mẫu nào. Hãy bấm "+ Thêm Bản Mẫu Chuẩn" — hệ thống sẽ tự động cảnh báo trước 15 ngày khi mẫu hết hạn.</td></tr>`;
+        return;
+      }
+      const soHetHan = sampleList.filter(r => evaluateExpiryStatus(r.han).label === "Hết hạn").length;
+      const soSapHet = sampleList.filter(r => evaluateExpiryStatus(r.han).label === "Sắp hết hạn").length;
+      if (soHetHan > 0 || soSapHet > 0) {
+        const bg = soHetHan > 0 ? "#fee2e2" : "#fef3c7";
+        const col = soHetHan > 0 ? "#b91c1c" : "#b45309";
+        let msg = "⚠️ CẢNH BÁO: ";
+        if (soHetHan > 0) msg += `${soHetHan} mẫu đã HẾT HẠN `;
+        if (soSapHet > 0) msg += `${soSapHet} mẫu SẮP HẾT HẠN (≤15 ngày) `;
+        msg += "— Nhân viên vui lòng chuẩn bị lấy mẫu mới / gia hạn ngay!";
+        tbody.innerHTML += `<tr><td colspan="13" style="padding:10px 14px; background:${bg}; color:${col}; font-weight:700; text-align:left;">${msg}</td></tr>`;
+      }
+
+      filtered.forEach((r, i) => {
+        const origIdx = sampleList.indexOf(r);
+        const stObj = evaluateExpiryStatus(r.han);
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td>
+          <td style="font-weight:bold; color:var(--primary);">${r.code}</td>
+          <td><span class="cat-pill">${r.loaiHang}</span></td>
+          <td><b>${r.ten}</b></td>
+          <td>${r.ncc}</td>
+          <td>${r.viTri}</td>
+          <td style="font-weight:bold; color:#0f172a;">${r.nguoiKy || '—'}</td>
+          <td>${formatDateVN(r.ngayKy)}</td>
+          <td>${formatDateVN(r.han)}</td>
+          <td><span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span></td>
+          <td>${r.nguoiLuu}</td>
+          <td>${r.img ? `<img src="${r.img}" class="thumb-img" onclick="window.open('${r.img}')">` : '—'}</td>
+          <td class="no-capture">
+            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditSampleModal(${origIdx}))">✏ Sửa</button>
+            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteSampleRow(${origIdx})">🗑️</button>` : ""}
+          </td>
+        </tr>`;
+      });
+    }
+
+    function openAddSampleModal() {
+      TODAY_STR = getTodayISO();
+      document.getElementById('sampleModalTitle').innerText = "Thêm Bản Mẫu Chuẩn / Mẫu Giới Hạn - Bộ Phận IQC";
+      document.getElementById('sampleEditIdx').value = "-1";
+      document.getElementById('fSpCode').value = "";
+      document.getElementById('fSpLoaiHang').value = "Giấy";
+      document.getElementById('fSpTen').value = "";
+      document.getElementById('fSpNCC').value = "";
+      document.getElementById('fSpViTri').value = "";
+      document.getElementById('fSpNguoiKy').value = "";
+      document.getElementById('fSpNgayKy').value = TODAY_STR;
+      document.getElementById('fSpHan').value = "";
+      setPreviewImage('spPastePreview', "");
+      openModal('sampleModal');
+    }
+
+    function openEditSampleModal(idx) {
+      const r = sampleList[idx];
+      document.getElementById('sampleModalTitle').innerText = "Sửa Bản Mẫu: " + r.code;
+      document.getElementById('sampleEditIdx').value = idx;
+      document.getElementById('fSpCode').value = r.code;
+      document.getElementById('fSpLoaiHang').value = r.loaiHang;
+      document.getElementById('fSpTen').value = r.ten;
+      document.getElementById('fSpNCC').value = r.ncc;
+      document.getElementById('fSpViTri').value = r.viTri;
+      document.getElementById('fSpNguoiKy').value = r.nguoiKy || "";
+      document.getElementById('fSpNgayKy').value = r.ngayKy;
+      document.getElementById('fSpHan').value = r.han;
+      setPreviewImage('spPastePreview', r.img || "");
+      openModal('sampleModal');
+    }
+
+    function saveSampleForm() {
+      const code = document.getElementById('fSpCode').value.trim();
+      if (!code) { alert("Vui lòng nhập Mã Hàng / Code!"); return; }
+      const idx = parseInt(document.getElementById('sampleEditIdx').value);
+      const item = {
+        code,
+        loaiHang: document.getElementById('fSpLoaiHang').value,
+        ten: document.getElementById('fSpTen').value.trim(),
+        ncc: document.getElementById('fSpNCC').value.trim(),
+        viTri: document.getElementById('fSpViTri').value.trim(),
+        nguoiKy: document.getElementById('fSpNguoiKy').value.trim(),
+        ngayKy: document.getElementById('fSpNgayKy').value || getTodayISO(),
+        han: document.getElementById('fSpHan').value,
+        nguoiLuu: currentUser.name,
+        img: tempBase64
+      };
+      if (idx === -1) sampleList.unshift(item); else sampleList[idx] = item;
+      saveStateToLocal();
+      closeModal('sampleModal'); renderTab5Sample();
+    }
+
+    function deleteSampleRow(idx) {
+      askDeleteConfirm(() => {
+        sampleList.splice(idx, 1);
+        saveStateToLocal();
+        renderTab5Sample();
+      });
+    }
+
+    // --- TAB CON 5.2: DANH MỤC HIỆU CHUẨN THIẾT BỊ ---
+    function renderTab5Equip() {
+      const tbody = document.getElementById('bodyTab5Equip');
+      tbody.innerHTML = '';
+      equipList.forEach((r, i) => {
+        const stObj = evaluateExpiryStatus(r.hanHC);
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td>
+          <td style="font-weight:bold; color:var(--primary);">${r.ma}</td>
+          <td><b>${r.ten}</b></td>
+          <td>${r.serial}</td>
+          <td>${r.viTri}</td>
+          <td>${formatDateVN(r.ngayHC)}</td>
+          <td>${formatDateVN(r.hanHC)}</td>
+          <td><span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span></td>
+          <td>${r.nguoiPT}</td>
+          <td>${r.img ? `<img src="${r.img}" class="thumb-img" onclick="window.open('${r.img}')">` : '—'}</td>
+          <td class="no-capture">
+            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditEquipModal(${i}))">✏ Sửa</button>
+            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteEquipRow(${i})">🗑️</button>` : ""}
+          </td>
+        </tr>`;
+      });
+      renderTab5DailyMatrix();
+    }
+
+    function openAddEquipModal() {
+      TODAY_STR = getTodayISO();
+      document.getElementById('equipModalTitle').innerText = "Thêm Thiết Bị Đo Kiểm - Bộ Phận IQC";
+      document.getElementById('equipEditIdx').value = "-1";
+      document.getElementById('fEqMa').value = "";
+      document.getElementById('fEqTen').value = "";
+      document.getElementById('fEqSerial').value = "";
+      document.getElementById('fEqViTri').value = "";
+      document.getElementById('fEqNgayHC').value = TODAY_STR;
+      document.getElementById('fEqHanHC').value = "";
+      setPreviewImage('eqPastePreview', "");
+      openModal('equipModal');
+    }
+
+    function openEditEquipModal(idx) {
+      const r = equipList[idx];
+      document.getElementById('equipModalTitle').innerText = "Sửa Thiết Bị: " + r.ma;
+      document.getElementById('equipEditIdx').value = idx;
+      document.getElementById('fEqMa').value = r.ma;
+      document.getElementById('fEqTen').value = r.ten;
+      document.getElementById('fEqSerial').value = r.serial;
+      document.getElementById('fEqViTri').value = r.viTri;
+      document.getElementById('fEqNgayHC').value = r.ngayHC;
+      document.getElementById('fEqHanHC').value = r.hanHC;
+      setPreviewImage('eqPastePreview', r.img || "");
+      openModal('equipModal');
+    }
+
+    function saveEquipForm() {
+      const ma = document.getElementById('fEqMa').value.trim().toUpperCase();
+      const ten = document.getElementById('fEqTen').value.trim();
+      if (!ma || !ten) { alert("Vui lòng nhập Mã Thiết Bị và Tên Thiết Bị!"); return; }
+      const idx = parseInt(document.getElementById('equipEditIdx').value);
+      const item = {
+        ma, ten,
+        serial: document.getElementById('fEqSerial').value.trim(),
+        viTri: document.getElementById('fEqViTri').value.trim(),
+        ngayHC: document.getElementById('fEqNgayHC').value || getTodayISO(),
+        hanHC: document.getElementById('fEqHanHC').value,
+        nguoiPT: currentUser ? currentUser.name : "",
+        img: tempBase64
+      };
+      if (idx === -1) equipList.push(item); else equipList[idx] = item;
+      saveStateToLocal();
+      closeModal('equipModal');
+      renderTab5Equip();
+    }
+
+    function deleteEquipRow(idx) {
+      askDeleteConfirm(() => {
+        equipList.splice(idx, 1);
+        saveStateToLocal();
+        renderTab5Equip();
+        renderTab5DailyMatrix();
+      });
+    }
+
+    // --- TAB CON 5.3: BÁO CÁO LINE NGANG TỰ ĐỘNG ĐỒNG BỘ TỪ EQUIPLIST (HỖ TRỢ ĐA NĂM 2026, 2027...) ---
+    function getEquipDailyMatrixKey(year, month, shift) {
+      if (year === 2026 && equipDailyMatrixData[`${month}_${shift}`]) {
+        return `${month}_${shift}`;
+      }
+      return `${year}_${month}_${shift}`;
+    }
+
+    function renderTab5DailyMatrix() {
+      const month = parseInt(document.getElementById('monthSelectEquipDaily').value) || (new Date().getMonth() + 1);
+      const yearEl = document.getElementById('yearSelectEquipDaily');
+      const year = yearEl && yearEl.value ? parseInt(yearEl.value) : new Date().getFullYear();
+      const shift = document.getElementById('shiftSelectEquipDaily').value;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+      const matrixKey = getEquipDailyMatrixKey(year, month, shift);
+
+      if (!equipDailyMatrixData[matrixKey]) equipDailyMatrixData[matrixKey] = {};
+
+      let hRow1 = `<tr>
+        <th rowspan="2" class="sticky-col-1">Mã Số</th>
+        <th rowspan="2" class="sticky-col-2">Tên Thiết Bị</th>
+        <th rowspan="2">Vị Trí</th>
+        <th rowspan="2">Ca</th>
+        <th rowspan="2">Người Kiểm Tra</th>`;
+      let hRow2 = `<tr>`;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dow = new Date(year, month - 1, d).getDay();
+        const isSun = dow === 0 ? 'weekend-col' : '';
+        hRow1 += `<th class="${isSun}">${d}</th>`;
+        hRow2 += `<th class="${isSun}">${dayNames[dow]}</th>`;
+      }
+      hRow1 += `</tr>`; hRow2 += `</tr>`;
+      document.getElementById('headTab5DailyMatrix').innerHTML = hRow1 + hRow2;
+
+      let bodyHtml = '';
+      equipList.forEach(eq => {
+        if (!equipDailyMatrixData[matrixKey][eq.ma]) {
+          equipDailyMatrixData[matrixKey][eq.ma] = { checker: eq.nguoiPT || "", days: {} };
+        }
+        const rec = equipDailyMatrixData[matrixKey][eq.ma];
+        let daysHtml = '';
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const val = rec.days[d] || "";
+          let tagClass = "";
+          if (val === "OK") tagClass = "tag-OK";
+          else if (val === "NG") tagClass = "tag-NG";
+          else if (val === "BT") tagClass = "tag-BT";
+
+          daysHtml += `<td class="cell-day ${tagClass}" onclick="openEquipDailyCellPicker('${matrixKey}', '${eq.ma}', '${eq.ten}', ${d}, ${month}, ${year})">${val}</td>`;
+        }
+
+        bodyHtml += `<tr>
+          <td class="sticky-col-1" style="color:var(--primary);">${eq.ma}</td>
+          <td class="sticky-col-2">${eq.ten}</td>
+          <td>${eq.viTri}</td>
+          <td><span class="cat-pill">${shift}</span></td>
+          <td><b>${rec.checker}</b></td>
+          ${daysHtml}
+        </tr>`;
+      });
+
+      document.getElementById('bodyTab5DailyMatrix').innerHTML = bodyHtml;
+    }
+
+    function openEquipDailyCellPicker(matrixKey, eqMa, eqTen, day, month, year) {
+      if (!currentUser) {
+        alert("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi chấm kiểm tra thiết bị!");
+        openPinModal();
+        return;
+      }
+      activeEquipDailyCell = { matrixKey, eqMa, day };
+      document.getElementById('equipDailyCellTitle').innerText = `${eqMa} (${eqTen}) - Ngày ${String(day).padStart(2,'0')}/${String(month).padStart(2,'0')}/${year}`;
+      openModal('equipDailyCellModal');
+    }
+
+    function applyEquipDailyValue(val) {
+      if (!activeEquipDailyCell) return;
+      const { matrixKey, eqMa, day } = activeEquipDailyCell;
+      if (!equipDailyMatrixData[matrixKey][eqMa]) {
+        equipDailyMatrixData[matrixKey][eqMa] = { checker: currentUser.name, days: {} };
+      }
+      equipDailyMatrixData[matrixKey][eqMa].checker = currentUser.name;
+      if (val === "") delete equipDailyMatrixData[matrixKey][eqMa].days[day];
+      else equipDailyMatrixData[matrixKey][eqMa].days[day] = val;
+
+      saveStateToLocal();
+      closeModal('equipDailyCellModal');
+      renderTab5DailyMatrix();
+    }
+
+    function markTodayAllEquipOK() {
+      const now = new Date();
+      const month = parseInt(document.getElementById('monthSelectEquipDaily').value) || (now.getMonth() + 1);
+      const yearEl = document.getElementById('yearSelectEquipDaily');
+      const year = yearEl && yearEl.value ? parseInt(yearEl.value) : now.getFullYear();
+      const shift = document.getElementById('shiftSelectEquipDaily').value;
+      const matrixKey = getEquipDailyMatrixKey(year, month, shift);
+      const todayDay = now.getDate();
+      if (!equipDailyMatrixData[matrixKey]) equipDailyMatrixData[matrixKey] = {};
+      equipList.forEach(eq => {
+        if (!equipDailyMatrixData[matrixKey][eq.ma]) {
+          equipDailyMatrixData[matrixKey][eq.ma] = { checker: currentUser ? currentUser.name : "", days: {} };
+        }
+        if (currentUser) equipDailyMatrixData[matrixKey][eq.ma].checker = currentUser.name;
+        equipDailyMatrixData[matrixKey][eq.ma].days[todayDay] = "OK";
+      });
+      saveStateToLocal();
+      renderTab5DailyMatrix();
+    }
+
+    // ================= 9. HỖ TRỢ DÁN ẢNH CTRL+V =================
+    function setPreviewImage(imgTagId, base64Str) {
+      tempBase64 = base64Str;
+      const el = document.getElementById(imgTagId);
+      if (!el) return;
+      if (base64Str) { el.src = base64Str; el.style.display = 'inline-block'; }
+      else { el.src = ''; el.style.display = 'none'; }
+    }
+
+    function previewPasteImage(input, previewId) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => setPreviewImage(previewId, e.target.result);
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    window.addEventListener('paste', function(e) {
+      let targetPreview = null;
+      if (!document.getElementById('ngModal').classList.contains('hidden')) targetPreview = 'ngPastePreview';
+      else if (!document.getElementById('sampleModal').classList.contains('hidden')) targetPreview = 'spPastePreview';
+      else if (!document.getElementById('equipModal').classList.contains('hidden')) targetPreview = 'eqPastePreview';
+      if (!targetPreview) return;
+
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          const reader = new FileReader();
+          reader.onload = event => setPreviewImage(targetPreview, event.target.result);
+          reader.readAsDataURL(blob);
+          e.preventDefault();
+          break;
+        }
+      }
+    });
+
+    // ================= 10. XUẤT EXCEL & XUẤT ẢNH =================
+    function exportTableToExcel(tableId, fileNamePrefix) {
+      if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, vui lòng thử lại!"); return; }
+      const tableEl = document.getElementById(tableId);
+      const wb = XLSX.utils.table_to_book(tableEl, { sheet: "BaoCao_BoPhan_IQC" });
+      XLSX.writeFile(wb, `${fileNamePrefix}_${formatDateVN(getTodayISO()).replace(/\//g,'-')}.xlsx`);
+    }
+
+    function exportSectionToImage(elementId, fileNamePrefix) {
+      if (typeof html2canvas === 'undefined') { alert("Thư viện chụp ảnh đang tải, vui lòng thử lại!"); return; }
+      const target = document.getElementById(elementId);
+
+      html2canvas(target, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        onclone: function(clonedDoc) {
+          const clonedTarget = clonedDoc.getElementById(elementId);
+          if (!clonedTarget) return;
+
+          clonedTarget.querySelectorAll('.no-capture').forEach(el => el.style.display = 'none');
+          clonedTarget.querySelectorAll('.matrix-wrap').forEach(wrap => {
+            wrap.style.maxHeight = 'none';
+            wrap.style.overflow = 'visible';
+          });
+
+          const origSelects = target.querySelectorAll('select');
+          const clonedSelects = clonedTarget.querySelectorAll('select');
+          clonedSelects.forEach((cSel, idx) => {
+            const oSel = origSelects[idx];
+            const selectedText = oSel && oSel.options[oSel.selectedIndex] ? oSel.options[oSel.selectedIndex].text : '';
+            const span = clonedDoc.createElement('span');
+            span.innerText = selectedText;
+            span.style.cssText = 'display:inline-block; padding:5px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; color:#1b5e20; background:#f8fafc;';
+            cSel.parentNode.replaceChild(span, cSel);
+          });
+        }
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `${fileNamePrefix}_${formatDateVN(getTodayISO()).replace(/\//g,'-')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    // ================= 11. CHUYỂN TAB & ĐĂNG NHẬP PIN =================
+    function switchTab(tabId, el) {
+      currentActiveTabId = tabId;
+      document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      const targetSec = document.getElementById(tabId);
+      if (targetSec) targetSec.classList.remove('hidden');
+      if (el) el.classList.add('active');
+      else {
+        const matched = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+        if (matched) matched.classList.add('active');
+      }
+      if (tabId === 'tab2') renderTab2();
+      if (tabId === 'tab3') renderTab3();
+      if (tabId === 'tab4') renderTab4();
+      if (tabId === 'tab5') { renderTab5Sample(); renderTab5Equip(); renderTab5DailyMatrix(); }
+      if (tabId === 'tab6') { initTab6Filters(); renderTab6All(); }
+    }
+
+    function updateAdminUIControls() {
+      const isAdmin = currentUser && currentUser.role === "Admin";
+      const adminToolbar = document.getElementById('adminBackupToolbar');
+      const adminSidebar = document.getElementById('adminSidebarTools');
+      if (adminToolbar) {
+        if (isAdmin) adminToolbar.classList.remove('hidden');
+        else adminToolbar.classList.add('hidden');
+      }
+      if (adminSidebar) {
+        if (isAdmin) adminSidebar.classList.remove('hidden');
+        else adminSidebar.classList.add('hidden');
+      }
+    }
+
+    function openPinModal() {
+      document.getElementById('pinInput').value = '';
+      document.getElementById('pinError').innerText = '';
+      openModal('pinModal');
+      document.getElementById('pinInput').focus();
+    }
+
+    function submitPinLogin() {
+      let rawInput = document.getElementById('pinInput').value.trim().toUpperCase();
+      const found = USERS.find(u => {
+        const uPin = String(u.pin || "").trim().toUpperCase();
+        const uId = String(u.id || "").trim().toUpperCase();
+        const shortId = uId.replace("GS.", "");
+        if (u.role === "Admin") {
+          return rawInput === uPin;
+        }
+        return rawInput === uPin || rawInput === uId || rawInput === shortId;
+      });
+
+      if (found) {
+        currentUser = found;
+        document.getElementById('loggedUserName').innerText = `${found.name} (${found.id} - ${found.role})`;
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('btnOpenPin').classList.add('hidden');
+        updateAdminUIControls();
+        closeModal('pinModal');
+        refreshAllViews();
+      } else {
+        document.getElementById('pinError').innerText = "Mã PIN hoặc ID nhân viên không chính xác!";
+      }
+    }
+
+    function logoutPIN() {
+      currentUser = null;
+      document.getElementById('userBadge').classList.add('hidden');
+      document.getElementById('btnOpenPin').classList.remove('hidden');
+      updateAdminUIControls();
+      refreshAllViews();
+    }
+
+    function requireAuth(fn) {
+      if (!currentUser) {
+        alert("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi thực hiện!");
+        openPinModal();
+        return;
+      }
+      fn();
+    }
+
+    // ================= 12. TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI (AUTO MÃ CV-DDMM-XX THEO NGÀY & THỨ TỰ) =================
+    function generateAutoCodeForDate(dateStr) {
+      const dStr = dateStr || getTodayISO();
+      const parts = dStr.split('-');
+      const ddmm = parts.length === 3 ? `${parts[2]}${parts[1]}` : "0000";
+      const prefix = `CV-${ddmm}-`;
+
+      let maxSeq = 0;
+      let sameDayCount = 0;
+      taskList.forEach(t => {
+        const cStr = String(t.code || "").trim().toUpperCase();
+        if (t.ngayGiao === dStr || cStr.startsWith(prefix)) {
+          sameDayCount++;
+          const m = cStr.match(/(\d+)\s*$/);
+          if (m) {
+            const num = parseInt(m[1], 10);
+            if (!isNaN(num) && num > maxSeq) maxSeq = num;
+          }
+        }
+      });
+
+      const nextSeq = Math.max(maxSeq, sameDayCount) + 1;
+      return `${prefix}${String(nextSeq).padStart(2, '0')}`;
+    }
+
+    function previewAutoTaskCodeByDate() {
+      const idx = parseInt(document.getElementById('taskEditIdx').value);
+      if (idx !== -1) return;
+      const dStr = document.getElementById('fTkStartDate').value || getTodayISO();
+      document.getElementById('fTkCode').value = generateAutoCodeForDate(dStr);
+    }
+
+    function initTab6Filters() {
+      const assigneeSel = document.getElementById('filterAssigneeTab6');
+      if (!assigneeSel) return;
+      const curVal = assigneeSel.value || "ALL";
+      assigneeSel.innerHTML = `<option value="ALL">Tất cả nhân sự nhận việc</option>` +
+        USERS.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+      assigneeSel.value = curVal;
+    }
+
+    function getTaskStatusInfo(tk) {
+      const today = getTodayISO();
+      if (tk.isDone) {
+        if (tk.ngayXong && tk.ngayXong <= tk.hanChot) return { label: "Hoàn thành đúng hạn", cls: "st-valid", pct: 100, kpiWeight: 1.0 };
+        return { label: "Hoàn thành trễ hạn", cls: "st-warn", pct: 100, kpiWeight: 0.5 };
+      }
+      if (today > tk.hanChot) return { label: "Quá hạn chưa xong", cls: "st-expired", pct: 0, kpiWeight: 0.0 };
+      return { label: "Đang thực hiện", cls: "st-info", pct: 0, kpiWeight: 0.0 };
+    }
+
+    function getUserNameById(id) {
+      const u = USERS.find(x => x.id === id);
+      return u ? u.name : id;
+    }
+
+    function renderTab6All() {
+      const btnAdd = document.getElementById('btnOpenAddTask');
+      if (btnAdd) {
+        if (currentUser && (currentUser.role === "Admin" || currentUser.canAssign)) btnAdd.classList.remove('hidden');
+        else btnAdd.classList.add('hidden');
+      }
+      renderTab6TasksTable();
+      renderTab6KPITable();
+    }
+
+    function renderTab6TasksTable() {
+      const fMonth = document.getElementById('filterMonthTab6').value;
+      const fYear = document.getElementById('filterYearTab6') ? document.getElementById('filterYearTab6').value : "ALL";
+      const fAssignee = document.getElementById('filterAssigneeTab6').value;
+      const fStatus = document.getElementById('filterStatusTab6').value;
+      const isAdmin = currentUser && currentUser.role === "Admin";
+      const filtered = taskList.filter(tk => {
+        const stInfo = getTaskStatusInfo(tk);
+        return matchMonthAndYear(tk.ngayGiao, fMonth, fYear) && (fAssignee === "ALL" || tk.nguoiNhanId === fAssignee) && (fStatus === "ALL" || stInfo.label === fStatus);
+      });
+      const tbody = document.getElementById('bodyTab6Tasks');
+      tbody.innerHTML = '';
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="padding:24px; color:#94a3b8; font-style:italic;">Chưa có dữ liệu giao việc. Admin hoặc người có quyền giao việc hãy bấm "+ Giao Việc Mới" để tạo công việc đầu tiên.</td></tr>`;
+        return;
+      }
+      filtered.forEach((tk, i) => {
+        const origIdx = taskList.indexOf(tk);
+        const stInfo = getTaskStatusInfo(tk);
+        const assignerName = getUserNameById(tk.nguoiGiaoId);
+        const assigneeName = getUserNameById(tk.nguoiNhanId);
+        const isMyTask = currentUser && (currentUser.id === tk.nguoiNhanId);
+        let checkCellHtml = '';
+        if (isMyTask) {
+          checkCellHtml = tk.isDone
+            ? `<button type="button" class="check-done-btn checked" onclick="toggleCompleteTask(${origIdx})" title="Bấm để hủy tích nếu tích nhầm">☑️ Đã Tích Xong</button>`
+            : `<button type="button" class="check-done-btn" onclick="toggleCompleteTask(${origIdx})">☐ Tích Hoàn Thành</button>`;
+        } else {
+          checkCellHtml = tk.isDone
+            ? `<span style="color:#15803d; font-weight:700;">✔ ${assigneeName} đã tích</span>`
+            : `<span class="check-locked" title="Chỉ ${assigneeName} mới được tích!">🔒 Chỉ ${assigneeName} được tích</span>`;
+        }
+        const canEdit = currentUser && (currentUser.role === "Admin" || currentUser.id === tk.nguoiGiaoId);
+        let actionHtml = '';
+        if (canEdit) actionHtml += `<button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="openEditTaskModal(${origIdx})">✏ Sửa</button> `;
+        if (isAdmin) actionHtml += `<button type="button" class="btn-icon-del" onclick="deleteTaskRow(${origIdx})">🗑️</button>`;
+        if (!actionHtml) actionHtml = `<span style="color:#94a3b8; font-size:11px;">—</span>`;
+        let prioColor = "#1d4ed8";
+        if (tk.mucDo === "Khẩn cấp") prioColor = "#dc2626";
+        else if (tk.mucDo === "Quan trọng") prioColor = "#d97706";
+        tbody.innerHTML += `<tr>
+          <td>${i + 1}</td>
+          <td style="font-weight:bold; color:var(--primary);">${tk.code || '—'}</td>
+          <td>${formatDateVN(tk.ngayGiao)}</td>
+          <td style="font-weight:bold;">${formatDateVN(tk.hanChot)}</td>
+          <td style="text-align:left; white-space:normal;">
+            <div style="font-weight:700; color:#0f172a;">${tk.noiDung}</div>
+            ${tk.ghiChu ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Ghi chú: ${tk.ghiChu}</div>` : ''}
+          </td>
+          <td><b style="color:${prioColor};">${tk.mucDo}</b></td>
+          <td><b>${assignerName}</b><br><span style="font-size:10px;color:#64748b;">(${tk.nguoiGiaoId})</span></td>
+          <td style="background:#f8fafc;"><b>${assigneeName}</b><br><span style="font-size:10px;color:var(--primary);">(${tk.nguoiNhanId})</span></td>
+          <td>${checkCellHtml}</td>
+          <td><b>${formatDateVN(tk.ngayXong)}</b></td>
+          <td><span class="status-badge ${stInfo.cls}">${stInfo.label}</span></td>
+          <td style="font-weight:800; color:${stInfo.pct === 100 ? '#15803d' : '#dc2626'};">${stInfo.pct}%</td>
+          <td class="no-capture">${actionHtml}</td>
+        </tr>`;
+      });
+    }
+
+    function toggleCompleteTask(idx) {
+      const tk = taskList[idx];
+      if (!currentUser || currentUser.id !== tk.nguoiNhanId) {
+        alert(`Chỉ người được giao việc (${getUserNameById(tk.nguoiNhanId)}) mới được phép tích hoàn thành công việc này!`);
+        return;
+      }
+      tk.isDone = !tk.isDone;
+      tk.ngayXong = tk.isDone ? getTodayISO() : "";
+      saveStateToLocal();
+      renderTab6All();
+    }
+
+    function renderTab6KPITable() {
+      const fMonth = document.getElementById('filterMonthTab6').value;
+      const fYear = document.getElementById('filterYearTab6') ? document.getElementById('filterYearTab6').value : "ALL";
+      const isAdmin = currentUser && currentUser.role === "Admin";
+      const tbody = document.getElementById('bodyTab6KPI');
+      tbody.innerHTML = '';
+      USERS.forEach((emp, idx) => {
+        const empTasks = taskList.filter(tk => {
+          return tk.nguoiNhanId === emp.id && matchMonthAndYear(tk.ngayGiao, fMonth, fYear);
+        });
+        const total = empTasks.length;
+        let onTime = 0, lateDone = 0, inProgress = 0, overdue = 0;
+        empTasks.forEach(tk => {
+          const st = getTaskStatusInfo(tk).label;
+          if (st === "Hoàn thành đúng hạn") onTime++;
+          else if (st === "Hoàn thành trễ hạn") lateDone++;
+          else if (st === "Đang thực hiện") inProgress++;
+          else if (st === "Quá hạn chưa xong") overdue++;
+        });
+        const totalDone = onTime + lateDone;
+        const doneRate = total > 0 ? Math.round((totalDone / total) * 100) : 0;
+        const kpiScore = total > 0 ? Math.round(((onTime * 1.0 + lateDone * 0.5) / total) * 100) : 100;
+        let rankBadge = `<span class="status-badge st-info">Chưa có việc</span>`;
+        if (total > 0) {
+          if (kpiScore >= 95) rankBadge = `<span class="status-badge st-valid">Hạng A (Xuất sắc)</span>`;
+          else if (kpiScore >= 85) rankBadge = `<span class="status-badge st-info">Hạng B (Tốt)</span>`;
+          else if (kpiScore >= 70) rankBadge = `<span class="status-badge st-warn">Hạng C (Đạt)</span>`;
+          else rankBadge = `<span class="status-badge st-expired">Hạng D (Cần cải thiện)</span>`;
+        }
+        let roleToggleHtml = '';
+        if (emp.role === "Admin") {
+          roleToggleHtml = `<span class="status-badge st-valid">⭐ Admin (Mặc định)</span>`;
+        } else if (isAdmin) {
+          roleToggleHtml = `<label style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; font-weight:700; color:${emp.canAssign ? '#15803d' : '#64748b'};">
+            <input type="checkbox" ${emp.canAssign ? 'checked' : ''} onchange="toggleAssignPermission(${idx})">
+            ${emp.canAssign ? 'Được giao việc' : 'Nhân viên'}
+          </label>`;
+        } else {
+          roleToggleHtml = emp.canAssign ? `<b style="color:#15803d;">✔ Được giao việc</b>` : `<span style="color:#64748b;">Nhân viên</span>`;
+        }
+        tbody.innerHTML += `<tr>
+          <td>${idx + 1}</td>
+          <td style="font-weight:bold; color:var(--primary);">${emp.id}</td>
+          <td style="text-align:left; font-weight:700;">${emp.name}</td>
+          <td class="kpi-role-col">${roleToggleHtml}</td>
+          <td style="font-weight:800; font-size:13px;">${total} việc</td>
+          <td style="color:#15803d; font-weight:bold;">${onTime}</td>
+          <td style="color:#b45309; font-weight:bold;">${lateDone}</td>
+          <td style="color:#2563eb; font-weight:bold;">${inProgress}</td>
+          <td style="color:#dc2626; font-weight:bold;">${overdue}</td>
+          <td>
+            <div class="progress-wrap">
+              <div class="progress-fill" style="width:${doneRate}%;"></div>
+              <div class="progress-text">${doneRate}% (${totalDone}/${total})</div>
+            </div>
+          </td>
+          <td style="font-weight:900; font-size:14px; color:${total === 0 ? '#64748b' : (kpiScore >= 85 ? '#15803d' : '#dc2626')};">
+            ${total > 0 ? kpiScore + ' điểm' : '—'}
+          </td>
+          <td>${rankBadge}</td>
+        </tr>`;
+      });
+      document.querySelectorAll('#tableTab6KPI .kpi-role-col').forEach(el => { el.style.display = isAdmin ? '' : 'none'; });
+    }
+
+    function toggleAssignPermission(empIdx) {
+      if (!currentUser || currentUser.role !== "Admin") { alert("Chỉ Admin mới được thay đổi quyền Người giao việc!"); return; }
+      USERS[empIdx].canAssign = !USERS[empIdx].canAssign;
+      saveStateToLocal(true);
+      try { initTab6Filters(); } catch (e) {}
+      renderTab6All();
+    }
+
+    function populateTaskModalDropdowns() {
+      const assigners = USERS.filter(u => u.role === "Admin" || u.canAssign);
+      const selAssigner = document.getElementById('fTkAssigner');
+      selAssigner.innerHTML = assigners.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+      if (currentUser && (currentUser.role === "Admin" || currentUser.canAssign)) selAssigner.value = currentUser.id;
+      const selAssignee = document.getElementById('fTkAssignee');
+      selAssignee.innerHTML = USERS.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+    }
+
+    function openAddTaskModal() {
+      if (!currentUser || (!currentUser.canAssign && currentUser.role !== "Admin")) { alert("Tài khoản của bạn không có quyền Giao việc!"); return; }
+      const today = getTodayISO();
+      TODAY_STR = today;
+      populateTaskModalDropdowns();
+      document.getElementById('taskModalTitle').innerText = "Giao Việc Mới - Bộ Phận IQC";
+      document.getElementById('taskEditIdx').value = "-1";
+      document.getElementById('fTkStartDate').value = today;
+      document.getElementById('fTkDueDate').value = "";
+      document.getElementById('fTkCode').value = generateAutoCodeForDate(today);
+      document.getElementById('fTkPriority').value = "Bình thường";
+      document.getElementById('fTkTitle').value = "";
+      document.getElementById('fTkNote').value = "";
+      openModal('taskModal');
+    }
+
+    function openEditTaskModal(idx) {
+      populateTaskModalDropdowns();
+      const tk = taskList[idx];
+      document.getElementById('taskModalTitle').innerText = "Chỉnh Sửa Công Việc: " + (tk.code || "");
+      document.getElementById('taskEditIdx').value = idx;
+      document.getElementById('fTkAssigner').value = tk.nguoiGiaoId;
+      document.getElementById('fTkAssignee').value = tk.nguoiNhanId;
+      document.getElementById('fTkStartDate').value = tk.ngayGiao;
+      document.getElementById('fTkDueDate').value = tk.hanChot;
+      document.getElementById('fTkCode').value = tk.code || "";
+      document.getElementById('fTkPriority').value = tk.mucDo || "Bình thường";
+      document.getElementById('fTkTitle').value = tk.noiDung || "";
+      document.getElementById('fTkNote').value = tk.ghiChu || "";
+      openModal('taskModal');
+    }
+
+    function saveTaskForm() {
+      const noiDung = document.getElementById('fTkTitle').value.trim();
+      const hanChot = document.getElementById('fTkDueDate').value;
+      if (!noiDung || !hanChot) { alert("Vui lòng nhập đầy đủ Nội dung công việc và Hạn hoàn thành!"); return; }
+      const idx = parseInt(document.getElementById('taskEditIdx').value);
+      const ngayGiao = document.getElementById('fTkStartDate').value || getTodayISO();
+      const codeVal = document.getElementById('fTkCode').value.trim() || generateAutoCodeForDate(ngayGiao);
+      if (idx === -1) {
+        taskList.unshift({
+          code: codeVal,
+          ngayGiao: ngayGiao, hanChot: hanChot, noiDung: noiDung,
+          mucDo: document.getElementById('fTkPriority').value,
+          nguoiGiaoId: document.getElementById('fTkAssigner').value,
+          nguoiNhanId: document.getElementById('fTkAssignee').value,
+          isDone: false, ngayXong: "",
+          ghiChu: document.getElementById('fTkNote').value.trim()
+        });
+      } else {
+        const old = taskList[idx];
+        taskList[idx] = { ...old, code: codeVal, ngayGiao: ngayGiao, hanChot: hanChot, noiDung: noiDung, mucDo: document.getElementById('fTkPriority').value, nguoiGiaoId: document.getElementById('fTkAssigner').value, nguoiNhanId: document.getElementById('fTkAssignee').value, ghiChu: document.getElementById('fTkNote').value.trim() };
+      }
+      const [addedYear, addedMonth] = ngayGiao.split('-');
+      const fMonthEl = document.getElementById('filterMonthTab6');
+      const fYearEl = document.getElementById('filterYearTab6');
+      if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
+      if (fYearEl && fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
+      saveStateToLocal();
+      closeModal('taskModal');
+      renderTab6All();
+    }
+
+    function deleteTaskRow(idx) {
+      askDeleteConfirm(() => {
+        taskList.splice(idx, 1);
+        saveStateToLocal();
+        renderTab6All();
+      });
+    }
+
+    // ================= 13. SAO LƯU (.JSON) / PHỤC HỒI & CẤU HÌNH GOOGLE SHEETS (CHỈ ADMIN) =================
+    function exportFullBackupJSON() {
+      if (!currentUser || currentUser.role !== "Admin") {
+        alert("Chỉ Admin mới có quyền sao lưu dữ liệu hệ thống!");
+        return;
+      }
+      const backupObj = {
+        system: "GOLDSUN_IQC_QCS",
+        backupDate: new Date().toISOString(),
+        exportedBy: currentUser.name,
+        systemPass,
+        navMenuItems,
+        USERS,
+        monthlyLeaveRecords,
+        lotData,
+        ngPendingData,
+        claimData,
+        sampleList,
+        equipList,
+        equipDailyMatrixData,
+        taskList
+      };
+      const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Backup_IQC_Goldsun_${formatDateVN(getTodayISO()).replace(/\//g, '-')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importFullBackupJSON(inputEl) {
+      if (!currentUser || currentUser.role !== "Admin") {
+        alert("Chỉ Admin mới có quyền phục hồi dữ liệu!");
+        return;
+      }
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !Array.isArray(data.USERS)) {
+            alert("File Backup không đúng định dạng của hệ thống GOLDSUN IQC!");
+            return;
+          }
+          if (confirm(`Xác nhận khôi phục toàn bộ dữ liệu từ bản sao lưu ngày [${data.backupDate || ''}]?`)) {
+            applyDataObjectToMemory(data);
+            saveStateToLocal(true);
+            refreshAllViews();
+            alert("Đã khôi phục toàn bộ dữ liệu hệ thống thành công!");
+          }
+        } catch (err) {
+          alert("Lỗi đọc file Backup: " + err.message);
+        }
+        inputEl.value = "";
+      };
+      reader.readAsText(file);
+    }
+
+    function openSheetConfigModal() {
+      if (!currentUser || currentUser.role !== "Admin") return;
+      document.getElementById('cfgApiUrlInput').value = API_URL || "";
+      document.getElementById('statusTextConnect').innerHTML = API_URL
+        ? "<span style='color:#15803d;'>Đã lưu đường dẫn Web App</span>"
+        : "<span style='color:#d97706;'>Chưa thiết lập (Đang chạy chế độ Lưu nội bộ trên máy)</span>";
+      openModal('sheetConfigModal');
+    }
+
+    async function testSheetConnection() {
+      const url = document.getElementById('cfgApiUrlInput').value.trim();
+      const statusEl = document.getElementById('statusTextConnect');
+      if (!url || !url.startsWith("https://script.google.com/macros/s/")) {
+        statusEl.innerHTML = "<span style='color:#dc2626;'>❌ Link phải bắt đầu bằng https://script.google.com/macros/s/...</span>";
+        return;
+      }
+      statusEl.innerHTML = "<span style='color:#2563eb;'>⏳ Đang kiểm tra kết nối & tải dữ liệu từ Google Sheets...</span>";
+      try {
+        API_URL = url;
+        localStorage.setItem("IQC_GOLDSUN_API_URL", url);
+        const ok = await pullAllDataFromCloud(false);
+        statusEl.innerHTML = ok
+          ? "<span style='color:#15803d;'>✅ Kết nối thành công & Đã đồng bộ dữ liệu từ Sheet về máy!</span>"
+          : "<span style='color:#15803d;'>✅ Đường dẫn hợp lệ! (Sheet hiện đang trống, hãy bấm 'Đẩy dữ liệu lên Sheet')</span>";
+      } catch (err) {
+        statusEl.innerHTML = `<span style='color:#dc2626;'>❌ Không thể kết nối (${err.message})</span>`;
+      }
+    }
+
+    function saveSheetConfig() {
+      const url = document.getElementById('cfgApiUrlInput').value.trim();
+      API_URL = url;
+      if (url) {
+        localStorage.setItem("IQC_GOLDSUN_API_URL", url);
+        pullAllDataFromCloud(false);
+      } else {
+        localStorage.removeItem("IQC_GOLDSUN_API_URL");
+        updateSyncStatusBadge("local");
+      }
+      alert(url ? "Đã lưu đường dẫn Google Sheets thành công!" : "Đã chuyển về chế độ lưu trữ độc lập trên máy!");
+      closeModal('sheetConfigModal');
+    }
+
+    async function pushAllDataToCloud(showAlert = false, syncUsersFlag = false) {
+      const url = (document.getElementById('cfgApiUrlInput') ? document.getElementById('cfgApiUrlInput').value.trim() : "") || API_URL;
+      if (!url) {
+        if (showAlert) alert("Vui lòng nhập đường dẫn Web App URL trước!");
+        return;
+      }
+      updateSyncStatusBadge("syncing", "⏳ Đang lưu lên Sheet...");
+      try {
+        const rawObj = JSON.parse(localStorage.getItem(STORAGE_KEY_ALL) || "{}");
+        rawObj.syncUsersFromWeb = syncUsersFlag;
+        rawObj.systemPass = systemPass;
+        await fetch(url, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(rawObj)
+        });
+        updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
+        if (showAlert) alert("☁️ Đã đẩy toàn bộ dữ liệu 6 hạng mục lên Google Sheets thành công!");
+      } catch (err) {
+        updateSyncStatusBadge("error", "⚠️ Lỗi gửi Sheet");
+        if (showAlert) alert("Lỗi khi đẩy dữ liệu: " + err.message);
+      }
+    }
+
+    // ===== NÚT HIỂN THỊ / ẨN MẬT KHẨU (CON MẮT) =====
+    function togglePinVisibility(inputId, btnEl) {
+      const inp = document.getElementById(inputId);
+      if (!inp) return;
+      const show = inp.type === "password";
+      inp.type = show ? "text" : "password";
+      btnEl.textContent = show ? "🙈" : "👁️";
+    }
+
+    // ===== MODAL XÁC NHẬN XÓA DỮ LIỆU (CHỈ ADMIN ĐƯỢC GỌI) =====
+    let pendingDeleteCallback = null;
+    function askDeleteConfirm(callback) {
+      pendingDeleteCallback = callback;
+      openModal('confirmDeleteModal');
+    }
+    function executeDeleteConfirm() {
+      closeModal('confirmDeleteModal');
+      if (typeof pendingDeleteCallback === "function") {
+        const cb = pendingDeleteCallback; pendingDeleteCallback = null; cb();
+      }
+    }
+    function cancelDeleteConfirm() {
+      pendingDeleteCallback = null;
+      closeModal('confirmDeleteModal');
+    }
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    // Khởi tạo dữ liệu đã lưu trong máy và tự động tải từ Cloud ngay cả ở màn hình khóa (để đồng bộ Pass & PIN mới nhất từ Sheet)
+    window.addEventListener('DOMContentLoaded', async () => {
+      syncAllFiltersToRealTime();
+      loadStateFromLocal();
+      renderSidebarNav();
+      renderDailyBulletin();
+      if (API_URL && API_URL.startsWith("https://script.google.com")) {
+        await pullAllDataFromCloud(false);
+      }
+    });
+  </script>
+</body>
+</html>
