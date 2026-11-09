@@ -53,7 +53,7 @@
     .sync-badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); background: #f8fafc; color: var(--text-muted); }
     .user-pill { background: var(--primary-light); color: var(--primary); border: 1px solid #bbf7d0; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
-    /* BẢNG THÔNG BÁO & CẢNH BÁO TỰ ĐỘNG HÔM NAY (DAILY BULLETIN) */
+    /* BẢNG THÔNG BÁO & CẢNH BÁO TỰ ĐỘNG HÔM NAY */
     .bulletin-bar {
       background: #fff; border: 1px solid var(--border); border-left: 5px solid var(--primary-med);
       border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
@@ -96,7 +96,7 @@
     .btn-icon-del:hover { color: var(--danger); background: #fee2e2; }
     .select-box { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; background: #fff; line-height: 1.4; height: 32px; }
 
-    /* CARD & BẢNG BÁO CÁO (ĐÃ FIX KHÔNG BỊ CO ÉP MẤT THANH CUỘN) */
+    /* CARD & BẢNG BÁO CÁO */
     .tab-section { flex-shrink: 0; width: 100%; }
     .section-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); width: 100%; flex-shrink: 0; }
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
@@ -176,7 +176,7 @@
     .thumb-img { width: 38px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
     .hidden { display: none !important; }
 
-    /* ===== TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI ===== */
+    /* TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI */
     .check-done-btn { padding: 6px 11px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: 2px solid var(--primary-med); background: #fff; color: var(--primary-med); display: inline-flex; align-items: center; gap: 5px; transition: 0.15s; }
     .check-done-btn:hover { background: var(--primary-light); }
     .check-done-btn.checked { background: var(--primary-med); color: #fff; border-color: var(--primary-med); }
@@ -927,12 +927,12 @@
         <button type="button" class="btn btn-outline" onclick="closeModal('staffModal')">✕</button>
       </div>
       <div class="form-group">
-        <label>Mã Nhân Viên / Mã PIN (GS.*****):</label>
-        <input type="text" id="stId" class="form-control" placeholder="VD: GS.55123">
+        <label>Mã Nhân Viên / Mã PIN:</label>
+        <input type="text" id="stId" class="form-control" placeholder="Nhập mã nhân viên...">
       </div>
       <div class="form-group">
         <label>Họ và Tên Nhân Sự:</label>
-        <input type="text" id="stName" class="form-control" placeholder="VD: NGUYỄN VĂN B">
+        <input type="text" id="stName" class="form-control" placeholder="Nhập họ và tên...">
       </div>
       <div class="form-group">
         <label>Số Phép Hiện Tại (Tháng 10):</label>
@@ -962,15 +962,15 @@
       <input type="hidden" id="lotEditIdx" value="-1">
       <div class="form-grid">
         <div class="form-group"><label>Ngày Phát Sinh:</label><input type="date" id="fLotNgay" class="form-control"></div>
-        <div class="form-group"><label>Mã Code / Part No. (*):</label><input type="text" id="fLotCode" class="form-control" placeholder="VD: GH69-43532A"></div>
-        <div class="form-group"><label>Tên Nguyên Vật Liệu:</label><input type="text" id="fLotTenNVL" class="form-control" placeholder="VD: MANUAL BOX"></div>
-        <div class="form-group"><label>Nhà Cung Cấp:</label><input type="text" id="fLotNCC" class="form-control" placeholder="VD: CHIẾN LINH"></div>
-        <div class="form-group"><label>Công Đoạn Phát Sinh:</label><input type="text" id="fLotCD" class="form-control" placeholder="VD: SHD, BẾ 1A, GIFT..."></div>
+        <div class="form-group"><label>Mã Code / Part No. (*):</label><input type="text" id="fLotCode" class="form-control" placeholder="Nhập mã code..."></div>
+        <div class="form-group"><label>Tên Nguyên Vật Liệu:</label><input type="text" id="fLotTenNVL" class="form-control" placeholder="Nhập tên NVL..."></div>
+        <div class="form-group"><label>Nhà Cung Cấp:</label><input type="text" id="fLotNCC" class="form-control" placeholder="Nhập tên NCC..."></div>
+        <div class="form-group"><label>Công Đoạn Phát Sinh:</label><input type="text" id="fLotCD" class="form-control" placeholder="Nhập công đoạn..."></div>
         <div class="form-group"><label>Tỉ Lệ NG Tự Tính:</label><input type="text" id="fLotTiLePreview" class="form-control" value="0.00%" disabled style="background:#fef2f2; color:var(--danger); font-weight:bold;"></div>
         <div class="form-group"><label>Số Lượng Kiểm Tra:</label><input type="number" id="fLotSLKiem" class="form-control" placeholder="Nhập SL kiểm..." oninput="calcLotRatio()"></div>
         <div class="form-group"><label>Số Lượng NG Phát Sinh:</label><input type="number" id="fLotSLNG" class="form-control" placeholder="Nhập SL NG..." oninput="calcLotRatio()"></div>
-        <div class="form-group full"><label>Loại Hình Lỗi / Nguyên Nhân:</label><input type="text" id="fLotLoi" class="form-control" placeholder="VD: BẾ LỆCH, BẨN BỀ MẶT..."></div>
-        <div class="form-group full"><label>Biện Pháp Xử Lý:</label><textarea id="fLotBienPhap" class="form-control" rows="2" placeholder="VD: Yêu cầu bên gia công tách lọc..."></textarea></div>
+        <div class="form-group full"><label>Loại Hình Lỗi / Nguyên Nhân:</label><input type="text" id="fLotLoi" class="form-control" placeholder="Nhập loại lỗi..."></div>
+        <div class="form-group full"><label>Biện Pháp Xử Lý:</label><textarea id="fLotBienPhap" class="form-control" rows="2" placeholder="Nhập biện pháp xử lý..."></textarea></div>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
         <button type="button" class="btn btn-outline" onclick="closeModal('lotModal')">Đóng</button>
@@ -989,9 +989,9 @@
       <input type="hidden" id="ngEditIdx" value="-1">
       <div class="form-grid">
         <div class="form-group"><label>Ngày Ghi Nhận:</label><input type="date" id="fNgNgay" class="form-control"></div>
-        <div class="form-group"><label>Mã Hàng (*):</label><input type="text" id="fNgMaHang" class="form-control" placeholder="VD: M001"></div>
-        <div class="form-group"><label>Loại Hàng / Tên NVL:</label><input type="text" id="fNgLoaiHang" class="form-control" placeholder="VD: Nhôm tấm A5052"></div>
-        <div class="form-group"><label>Nhà Cung Cấp:</label><input type="text" id="fNgNCC" class="form-control" placeholder="VD: SEANSTAR"></div>
+        <div class="form-group"><label>Mã Hàng (*):</label><input type="text" id="fNgMaHang" class="form-control" placeholder="Nhập mã hàng..."></div>
+        <div class="form-group"><label>Loại Hàng / Tên NVL:</label><input type="text" id="fNgLoaiHang" class="form-control" placeholder="Nhập loại hàng..."></div>
+        <div class="form-group"><label>Nhà Cung Cấp:</label><input type="text" id="fNgNCC" class="form-control" placeholder="Nhập tên NCC..."></div>
         <div class="form-group"><label>Số Lượng NG:</label><input type="number" id="fNgSL" class="form-control" placeholder="Nhập số lượng NG..."></div>
         <div class="form-group">
           <label>Hiện Trạng Xử Lý:</label>
@@ -1001,8 +1001,8 @@
             <option value="Đã xử lý">Đã xử lý</option>
           </select>
         </div>
-        <div class="form-group full"><label>Lỗi Gặp Phải:</label><input type="text" id="fNgLoi" class="form-control" placeholder="VD: Xước bề mặt sâu..."></div>
-        <div class="form-group full"><label>Ghi Chú Xử Lý:</label><input type="text" id="fNgGhiChu" class="form-control" placeholder="VD: Yêu cầu đổi lô mới..."></div>
+        <div class="form-group full"><label>Lỗi Gặp Phải:</label><input type="text" id="fNgLoi" class="form-control" placeholder="Nhập lỗi gặp phải..."></div>
+        <div class="form-group full"><label>Ghi Chú Xử Lý:</label><input type="text" id="fNgGhiChu" class="form-control" placeholder="Nhập ghi chú xử lý..."></div>
         <div class="form-group full">
           <label>Đính Kèm Ảnh Minh Chứng (Bấm Ctrl + V để dán ảnh trực tiếp hoặc Chọn tệp):</label>
           <div class="paste-zone" tabindex="0">
@@ -1029,12 +1029,12 @@
       <input type="hidden" id="claimEditIdx" value="-1">
       <div class="form-grid">
         <div class="form-group"><label>Ngày Tháng:</label><input type="date" id="fClNgay" class="form-control" onchange="previewAutoNCRByDate()"></div>
-        <div class="form-group"><label>Nhà Gia Công / NCC (*):</label><input type="text" id="fClNCC" class="form-control" placeholder="VD: HÙNG LINH, SUNGJIN, SAMPRINT"></div>
+        <div class="form-group"><label>Nhà Gia Công / NCC (*):</label><input type="text" id="fClNCC" class="form-control" placeholder="Nhập tên NCC..."></div>
         <div class="form-group"><label>Số Quản Lý NCR (Auto nhảy theo ngày):</label><input type="text" id="fClNCR" class="form-control" placeholder="Tự động sinh NCR-I-YYYYMMDD-XXX"></div>
-        <div class="form-group"><label>Mã Sản Phẩm (*):</label><input type="text" id="fClCode" class="form-control" placeholder="VD: GH69-47058A"></div>
+        <div class="form-group"><label>Mã Sản Phẩm (*):</label><input type="text" id="fClCode" class="form-control" placeholder="Nhập mã sản phẩm..."></div>
         <div class="form-group"><label>SL Đưa Vào SX (pcs):</label><input type="number" id="fClSLVao" class="form-control" placeholder="Nhập SL đưa vào SX..." oninput="calcClaimPreview()"></div>
         <div class="form-group"><label>Số Lượng NG (pcs):</label><input type="number" id="fClSLNG" class="form-control" placeholder="Nhập SL NG..." oninput="calcClaimPreview()"></div>
-        <div class="form-group full"><label>Tình Trạng Lỗi:</label><input type="text" id="fClLoi" class="form-control" placeholder="VD: Bẩn, xước, bẻ sai lằn, gãy pad..."></div>
+        <div class="form-group full"><label>Tình Trạng Lỗi:</label><input type="text" id="fClLoi" class="form-control" placeholder="Nhập tình trạng lỗi..."></div>
         <div class="form-group"><label>Số Người Lọc:</label><input type="number" id="fClSoNguoi" class="form-control" placeholder="Nhập số người lọc (Mặc định: 1)..." oninput="calcClaimPreview()"></div>
         <div class="form-group"><label>Đơn Giá Lọc (VNĐ/giờ):</label><input type="number" id="fClDonGiaLoc" class="form-control" placeholder="Mặc định: 60052" oninput="calcClaimPreview()"></div>
         <div class="form-group">
@@ -1068,7 +1068,7 @@
       </div>
       <input type="hidden" id="sampleEditIdx" value="-1">
       <div class="form-grid">
-        <div class="form-group"><label>Mã Hàng / Code (*):</label><input type="text" id="fSpCode" class="form-control" placeholder="VD: GH69-47058A"></div>
+        <div class="form-group"><label>Mã Hàng / Code (*):</label><input type="text" id="fSpCode" class="form-control" placeholder="Nhập mã hàng..."></div>
         <div class="form-group">
           <label>Loại Hàng (*):</label>
           <select id="fSpLoaiHang" class="form-control">
@@ -1080,7 +1080,7 @@
           </select>
         </div>
         <div class="form-group"><label>Tên Mẫu & Phân Loại:</label><input type="text" id="fSpTen" class="form-control" placeholder="VD: Mẫu chuẩn màu / Mẫu giới hạn xước"></div>
-        <div class="form-group"><label>Nhà Cung Cấp / Khách Hàng:</label><input type="text" id="fSpNCC" class="form-control" placeholder="VD: SEANSTAR / SAMSUNG"></div>
+        <div class="form-group"><label>Nhà Cung Cấp / Khách Hàng:</label><input type="text" id="fSpNCC" class="form-control" placeholder="Nhập NCC / Khách hàng..."></div>
         <div class="form-group"><label>Vị Trí Lưu Trữ (Tủ / Ngăn / File số):</label><input type="text" id="fSpViTri" class="form-control" placeholder="VD: Tủ A - Ngăn 2 - File 05"></div>
         <div class="form-group"><label>Người Ký Duyệt (*):</label><input type="text" id="fSpNguoiKy" class="form-control" placeholder="Nhập họ tên người ký duyệt..."></div>
         <div class="form-group"><label>Ngày Ký Duyệt:</label><input type="date" id="fSpNgayKy" class="form-control"></div>
@@ -1111,8 +1111,8 @@
       <input type="hidden" id="equipEditIdx" value="-1">
       <div class="form-grid">
         <div class="form-group"><label>Mã Thiết Bị (*):</label><input type="text" id="fEqMa" class="form-control" placeholder="VD: TB-IQC-01"></div>
-        <div class="form-group"><label>Tên Thiết Bị Đo (*):</label><input type="text" id="fEqTen" class="form-control" placeholder="VD: Thước cặp điện tử Mitutoyo"></div>
-        <div class="form-group"><label>Số Serial:</label><input type="text" id="fEqSerial" class="form-control" placeholder="VD: SN-882910"></div>
+        <div class="form-group"><label>Tên Thiết Bị Đo (*):</label><input type="text" id="fEqTen" class="form-control" placeholder="Nhập tên thiết bị đo..."></div>
+        <div class="form-group"><label>Số Serial:</label><input type="text" id="fEqSerial" class="form-control" placeholder="Nhập số Serial..."></div>
         <div class="form-group"><label>Vị Trí Đặt Máy:</label><input type="text" id="fEqViTri" class="form-control" placeholder="VD: Bàn kiểm IQC số 1"></div>
         <div class="form-group"><label>Ngày Hiệu Chuẩn Gần Nhất:</label><input type="date" id="fEqNgayHC" class="form-control"></div>
         <div class="form-group"><label>Hạn Hiệu Chuẩn Tiếp Theo:</label><input type="date" id="fEqHanHC" class="form-control"></div>
@@ -1132,12 +1132,12 @@
     </div>
   </div>
 
-  <!-- MODAL ĐĂNG NHẬP PIN RIÊNG CHO ADMIN & NHÂN VIÊN IQC -->
+  <!-- MODAL ĐĂNG NHẬP PIN RIÊNG -->
   <div id="pinModal" class="modal-overlay hidden">
     <div class="modal-box" style="max-width: 400px; text-align: center;">
       <h3 style="color: var(--primary); margin-bottom: 6px;">ĐĂNG NHẬP HỆ THỐNG IQC</h3>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-        Nhân viên IQC nhập mã <b>GS.*****</b> (hoặc 5 số đuôi)
+        Nhập mã PIN hoặc mã ID nhân viên để xác thực
       </p>
       <div style="position:relative; margin-bottom: 10px;">
         <input type="password" id="pinInput" class="form-control" placeholder="Nhập PIN hoặc Mã ID..." style="text-align: center; font-size: 16px; font-weight: bold; padding-right: 44px;" onkeydown="if(event.key==='Enter') submitPinLogin()">
@@ -1157,11 +1157,11 @@
       }
     } catch (err) {}
 
-    // KHI ĐƯA LÊN GITHUB PAGES: Dán link /exec của Google Apps Script vào giữa 2 dấu nháy kép dưới đây
-    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+    // DÁN ĐƯỜNG LINK /exec CỦA GOOGLE APPS SCRIPT VÀO GIỮA 2 DẤU NHÁY KÉP DƯỚI ĐÂY TRƯỚC KHI ĐƯA LÊN GITHUB:
+    const DEFAULT_API_URL = "AKfycbyiGwbfUU_geNhZvYIqA2HgtMUE8sa-yZhsMIXBnmKRrbJ3b1U_o2aIaCZq3w2TKUt_";
     let API_URL = localStorage.getItem("IQC_GOLDSUN_API_URL") || DEFAULT_API_URL;
 
-    // BẢO MẬT GITHUB PUBLIC: Không lưu cứng Mật khẩu & Danh sách PIN trong mã nguồn HTML
+    // BẢO MẬT GITHUB PUBLIC: Không lưu mật khẩu và danh sách nhân sự trong mã nguồn HTML
     let systemPass = "";
     let sessionAuthPass = "";
     const STORAGE_KEY_ALL = "GOLDSUN_IQC_MASTER_DATA_V1";
@@ -1330,7 +1330,7 @@
       });
     }
 
-    // Danh sách 6 Menu Hạng Mục chuẩn (Cho phép Admin sắp xếp & ẩn/hiện)
+    // Danh sách 6 Menu Hạng Mục chuẩn
     let navMenuItems = [
       { id: "tab1", label: "📅 1 · Báo cáo nghỉ 44h Bộ Phận IQC", visible: true },
       { id: "tab2", label: "⚙️ 2 · Báo cáo Lot phát sinh", visible: true },
@@ -1340,7 +1340,7 @@
       { id: "tab6", label: "📋 6 · Giao việc & Đánh giá KPI", visible: true }
     ];
 
-    // Danh sách Nhân sự để trống trên GitHub (Tự động tải từ Google Sheets sau khi mở khóa)
+    // Danh sách Nhân sự rỗng hoàn toàn trên GitHub (Chỉ nạp vào bộ nhớ sau khi xác thực đúng Password với Google Sheets)
     let USERS = [];
 
     let monthlyLeaveRecords = {};
@@ -1352,7 +1352,7 @@
     let equipDailyMatrixData = {};
     let taskList = [];
 
-    // ================= LƯU TRỮ TỰ ĐỘNG LOCALSTORAGE & ĐỒNG BỘ 2 CHIỀU GOOGLE SHEETS =================
+    // ================= LƯU TRỮ & ĐỒNG BỘ 2 CHIỀU GOOGLE SHEETS =================
     function applyDataObjectToMemory(data) {
       if (!data || typeof data !== 'object') return false;
       if (data.systemPass && String(data.systemPass).trim() !== "") {
@@ -1412,7 +1412,7 @@
       } catch (e) {}
     }
 
-    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (CÓ ĐÍNH KÈM MẬT KHẨU XÁC THỰC)
+    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (ĐÍNH KÈM MẬT KHẨU XÁC THỰC)
     async function pullAllDataFromCloud(showAlert = false) {
       if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
         updateSyncStatusBadge("local");
@@ -1439,15 +1439,15 @@
           }
           refreshAllViews();
           updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
-          if (showAlert) alert("✅ Đã tải dữ liệu & danh sách PIN mới nhất từ Google Sheets!");
+          if (showAlert) alert("✅ Đã tải dữ liệu & danh sách nhân sự mới nhất từ Google Sheets!");
           return true;
         } else {
-          updateSyncStatusBadge("synced", "☁️ Sheet sẵn sàng");
+          updateSyncStatusBadge("error", "⚠️ Sheet chưa trả về USERS");
           return false;
         }
       } catch (err) {
-        updateSyncStatusBadge("error", "⚠️ Offline (Dùng bản lưu máy)");
-        if (showAlert) alert("Không thể tải từ Google Sheets (" + err.message + "). Hệ thống đang hiển thị bản lưu trên máy.");
+        updateSyncStatusBadge("error", "⚠️ Lỗi kết nối Sheet");
+        if (showAlert) alert("Không thể tải từ Google Sheets (" + err.message + ").");
         return false;
       }
     }
@@ -1499,10 +1499,10 @@
       saveStateToLocal(true);
       closeModal('securityModal');
       refreshAllViews();
-      alert("✅ Đã cập nhật Password Dashboard & Mã PIN nhân viên thành công!");
+      alert("✅ Đã cập nhật Password Dashboard & Mã PIN nhân viên lên Google Sheets thành công!");
     }
 
-    // ================= BẢNG THÔNG BÁO & NHẮC VIỆC HÔM NAY (CẬP NHẬT THỜI GIAN THỰC) =================
+    // ================= BẢNG THÔNG BÁO & NHẮC VIỆC HÔM NAY =================
     function updateBulletinClockLabel() {
       const now = new Date();
       const latestISO = getTodayISO();
@@ -1642,45 +1642,52 @@
       renderSidebarNav();
     }
 
-    // ================= 1. MỞ KHÓA DASHBOARD (XÁC THỰC TRỰC TIẾP QUA GOOGLE SHEETS) =================
+    // ================= 1. MỞ KHÓA DASHBOARD (BẮT BUỘC XÁC THỰC & NHẬN USERS TỪ GOOGLE SHEETS) =================
     async function unlockDashboard() {
       const val = (document.getElementById('gatePass').value || "").trim();
       const errEl = document.getElementById('gateErr');
       if (!val) {
+        errEl.style.color = "var(--danger)";
         errEl.innerText = "Vui lòng nhập mật khẩu hệ thống!";
         return;
       }
 
-      if (API_URL && API_URL.startsWith("https://script.google.com")) {
-        errEl.style.color = "var(--info)";
-        errEl.innerText = "⏳ Đang xác thực mật khẩu với Google Sheets...";
-        sessionAuthPass = val;
-        const result = await pullAllDataFromCloud(false);
-        if (result === "UNAUTHORIZED") {
-          sessionAuthPass = "";
-          errEl.style.color = "var(--danger)";
-          errEl.innerText = "❌ Mật khẩu không đúng! Vui lòng nhập lại.";
-          return;
-        }
-        errEl.innerText = "";
-        document.getElementById('gateOverlay').classList.add('hidden');
-        syncAllFiltersToRealTime();
-        refreshAllViews();
-      } else {
-        // Chế độ chạy Offline trên máy khi chưa gắn DEFAULT_API_URL
-        loadStateFromLocal();
-        const checkPass = systemPass || val;
-        if (val.toUpperCase() === checkPass.toUpperCase()) {
-          sessionAuthPass = val;
-          systemPass = checkPass;
-          document.getElementById('gateOverlay').classList.add('hidden');
-          syncAllFiltersToRealTime();
-          refreshAllViews();
+      // Nếu quên chưa dán link /exec vào DEFAULT_API_URL trong code, cho phép nhập link ngay để không bị kẹt
+      if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
+        const inputUrl = prompt("Chưa cấu hình đường dẫn Google Sheets (/exec) trong DEFAULT_API_URL.\nHãy dán đường link Web App (/exec) của bạn vào đây để kết nối:");
+        if (inputUrl && inputUrl.trim().startsWith("https://script.google.com")) {
+          API_URL = inputUrl.trim();
+          localStorage.setItem("IQC_GOLDSUN_API_URL", API_URL);
         } else {
           errEl.style.color = "var(--danger)";
-          errEl.innerText = "Mật khẩu không đúng! Vui lòng nhập lại.";
+          errEl.innerText = "⚠️ Cần gắn link /exec của Google Sheets để xác thực mật khẩu và tải danh sách nhân sự!";
+          return;
         }
       }
+
+      errEl.style.color = "var(--info)";
+      errEl.innerText = "⏳ Đang xác thực mật khẩu & tải danh sách nhân sự từ Google Sheets...";
+      sessionAuthPass = val;
+      const result = await pullAllDataFromCloud(false);
+
+      if (result === "UNAUTHORIZED") {
+        sessionAuthPass = "";
+        errEl.style.color = "var(--danger)";
+        errEl.innerText = "❌ Mật khẩu không đúng! Vui lòng nhập lại.";
+        return;
+      }
+
+      if (!result || USERS.length === 0) {
+        sessionAuthPass = "";
+        errEl.style.color = "var(--danger)";
+        errEl.innerText = "⚠️ Chưa tải được danh sách nhân sự từ Sheet. Hãy kiểm tra lại quyền truy cập 'Bất kỳ ai (Anyone)' và 'Phiên bản mới' bên Apps Script!";
+        return;
+      }
+
+      errEl.innerText = "";
+      document.getElementById('gateOverlay').classList.add('hidden');
+      syncAllFiltersToRealTime();
+      refreshAllViews();
     }
 
     function refreshAllViews() {
@@ -2963,7 +2970,7 @@
       fn();
     }
 
-    // ================= 12. TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI (AUTO MÃ CV-DDMM-XX THEO NGÀY & THỨ TỰ) =================
+    // ================= 12. TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI =================
     function generateAutoCodeForDate(dateStr) {
       const dStr = dateStr || getTodayISO();
       const parts = dStr.split('-');
@@ -3342,7 +3349,7 @@
         }
         statusEl.innerHTML = ok
           ? "<span style='color:#15803d;'>✅ Kết nối thành công & Đã đồng bộ dữ liệu từ Sheet về máy!</span>"
-          : "<span style='color:#15803d;'>✅ Đường dẫn hợp lệ! (Sheet hiện đang trống, hãy bấm 'Đẩy dữ liệu lên Sheet')</span>";
+          : "<span style='color:#15803d;'>✅ Đường dẫn hợp lệ! (Hãy bấm 'Đẩy dữ liệu lên Sheet')</span>";
       } catch (err) {
         statusEl.innerHTML = `<span style='color:#dc2626;'>❌ Không thể kết nối (${err.message})</span>`;
       }
@@ -3398,7 +3405,7 @@
       btnEl.textContent = show ? "🙈" : "👁️";
     }
 
-    // ===== MODAL XÁC NHẬN XÓA DỮ LIỆU (CHỈ ADMIN ĐƯỢC GỌI) =====
+    // ===== MODAL XÁC NHẬN XÓA DỮ LIỆU =====
     let pendingDeleteCallback = null;
     function askDeleteConfirm(callback) {
       pendingDeleteCallback = callback;
