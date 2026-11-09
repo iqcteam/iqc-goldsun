@@ -1158,8 +1158,8 @@
     } catch (err) {}
 
     // DÁN ĐƯỜNG LINK /exec CỦA GOOGLE APPS SCRIPT VÀO GIỮA 2 DẤU NHÁY KÉP DƯỚI ĐÂY TRƯỚC KHI ĐƯA LÊN GITHUB:
-    const DEFAULT_API_URL = https://script.google.com/macros/s/AKfycbyiGwbfUU_geNhZvYIqA2HgtMUE8sa-yZhsMIXBnmKRrbJ3b1U_o2aIaCZq3w2TKUt_/exec";
-let API_URL = DEFAULT_API_URL || localStorage.getItem("IQC_GOLDSUN_API_URL");
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyiGwbfUU_geNhZvYIqA2HgtMUE8sa-yZhsMIXBnmKRrbJ3b1U_o2aIaCZq3w2TKUt_/exec";
+	let API_URL = DEFAULT_API_URL || localStorage.getItem("IQC_GOLDSUN_API_URL");
 
     // BẢO MẬT GITHUB PUBLIC: Không lưu mật khẩu và danh sách nhân sự trong mã nguồn HTML
     let systemPass = "";
@@ -1413,7 +1413,7 @@ let API_URL = DEFAULT_API_URL || localStorage.getItem("IQC_GOLDSUN_API_URL");
     }
 
     // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (ĐÍNH KÈM MẬT KHẨU XÁC THỰC)
-    async function pullAllDataFromCloud(showAlert = false) {
+   async function pullAllDataFromCloud(showAlert = false) {
       if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
         updateSyncStatusBadge("local");
         return false;
@@ -1423,17 +1423,20 @@ let API_URL = DEFAULT_API_URL || localStorage.getItem("IQC_GOLDSUN_API_URL");
 
       updateSyncStatusBadge("syncing", "⏳ Đang tải từ Sheet...");
       try {
-        const resp = await fetch(`${API_URL}?action=load&pass=${encodeURIComponent(passToUse)}&t=${Date.now()}`, { method: "GET" });
+        const resp = await fetch(`${API_URL}?action=load&pass=${encodeURIComponent(passToUse)}&t=${Date.now()}`, {
+          method: "GET",
+          redirect: "follow"
+        });
         const json = await resp.json();
         if (json && json.status === "unauthorized") {
           updateSyncStatusBadge("error", "🔒 Sai mật khẩu");
           return "UNAUTHORIZED";
         }
-        if (json && json.status === "ok" && json.data && Array.isArray(json.data.USERS)) {
+        if (json && json.status === "ok" && json.data) {
           applyDataObjectToMemory(json.data);
           sessionAuthPass = systemPass || passToUse;
           localStorage.setItem(STORAGE_KEY_ALL, JSON.stringify(json.data));
-          if (currentUser) {
+          if (currentUser && USERS.length > 0) {
             const updatedMe = USERS.find(u => u.id === currentUser.id);
             if (updatedMe) currentUser = updatedMe;
           }
@@ -1441,10 +1444,9 @@ let API_URL = DEFAULT_API_URL || localStorage.getItem("IQC_GOLDSUN_API_URL");
           updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
           if (showAlert) alert("✅ Đã tải dữ liệu & danh sách nhân sự mới nhất từ Google Sheets!");
           return true;
-        } else {
-          updateSyncStatusBadge("error", "⚠️ Sheet chưa trả về USERS");
-          return false;
         }
+        updateSyncStatusBadge("error", "⚠️ Sheet chưa trả về dữ liệu");
+        return false;
       } catch (err) {
         updateSyncStatusBadge("error", "⚠️ Lỗi kết nối Sheet");
         if (showAlert) alert("Không thể tải từ Google Sheets (" + err.message + ").");
