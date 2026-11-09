@@ -241,7 +241,7 @@
     </form>
   </div>
 
-  <!-- 2. SIDEBAR TRÁI (HỖ TRỢ SẮP XẾP / ẨN HIỆN DANH MỤC CHO ADMIN) -->
+  <!-- 2. SIDEBAR TRÁI -->
   <div class="sidebar">
     <div class="brand-box">
       <svg class="logo-svg" viewBox="0 0 200 200">
@@ -259,7 +259,6 @@
 
     <ul class="nav-menu" id="sidebarNavMenu"></ul>
 
-    <!-- NÚT SẮP XẾP / ẨN HIỆN DANH MỤC (CHỈ HIỂN THỊ VỚI ADMIN) -->
     <div id="adminSidebarTools" class="hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
       <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center; font-size: 11px;" onclick="openMenuConfigModal()">
         ⚙️ Sắp xếp / Ẩn hiện danh mục
@@ -277,7 +276,7 @@
         <button type="button" class="btn btn-outline" onclick="manualSyncNow()">↻ Cập nhật dữ liệu ngay</button>
         <span id="cloudSyncStatusBadge" class="sync-badge">💻 Lưu nội bộ</span>
 
-        <!-- KHỐI CÔNG CỤ ĐẶC QUYỀN ADMIN (CHỈ HIỆN KHI ĐĂNG NHẬP PIN ADMIN 254291) -->
+        <!-- KHỐI CÔNG CỤ ĐẶC QUYỀN ADMIN -->
         <div id="adminBackupToolbar" class="hidden" style="display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; border-left: 2px solid var(--border); padding-left: 8px;">
           <button type="button" class="btn btn-blue" onclick="exportFullBackupJSON()" title="Tải toàn bộ dữ liệu hệ thống về máy (.json)">📥 Sao Lưu (.json)</button>
           <button type="button" class="btn btn-outline" onclick="document.getElementById('restoreFileInput').click()" style="border-color:var(--primary-med); color:var(--primary);" title="Khôi phục dữ liệu từ file .json">📤 Phục Hồi</button>
@@ -296,7 +295,7 @@
       </div>
     </div>
 
-    <!-- BẢNG THÔNG BÁO / LỜI NHẮC VIỆC HÔM NAY (DAILY IQC BULLETIN) -->
+    <!-- BẢNG THÔNG BÁO / LỜI NHẮC VIỆC HÔM NAY -->
     <div id="dailyBulletinBar" class="bulletin-bar">
       <div class="bulletin-title">🔔 BẢNG TIN & NHẮC VIỆC IQC HÔM NAY (<span id="bulletinTodayLabel"></span>):</div>
       <div id="bulletinChipsContainer" class="bulletin-chips"></div>
@@ -1020,7 +1019,7 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 4: BẢNG NHẬP CLAIM FEE NCC (TAB 4 - ĐÃ CHUYỂN SANG NHẬP TAY 24H) ================= -->
+  <!-- ================= MODAL 4: BẢNG NHẬP CLAIM FEE NCC (TAB 4 - NHẬP TAY 24H) ================= -->
   <div id="claimModal" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-header">
@@ -1133,7 +1132,7 @@
     </div>
   </div>
 
-  <!-- MODAL ĐĂNG NHẬP PIN RIÊNG CHO ADMIN (254291) & NHÂN VIÊN IQC (GS.*****) -->
+  <!-- MODAL ĐĂNG NHẬP PIN RIÊNG CHO ADMIN & NHÂN VIÊN IQC -->
   <div id="pinModal" class="modal-overlay hidden">
     <div class="modal-box" style="max-width: 400px; text-align: center;">
       <h3 style="color: var(--primary); margin-bottom: 6px;">ĐĂNG NHẬP HỆ THỐNG IQC</h3>
@@ -1151,7 +1150,6 @@
       </div>
     </div>
   </div>
-
   <script>
     try {
       if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
@@ -1159,12 +1157,14 @@
       }
     } catch (err) {}
 
-    let systemPass = localStorage.getItem("IQC_GOLDSUN_SYS_PASS") || "IQC@2026";
-    const STORAGE_KEY_ALL = "GOLDSUN_IQC_MASTER_DATA_V1";
-
     // KHI ĐƯA LÊN GITHUB PAGES: Dán link /exec của Google Apps Script vào giữa 2 dấu nháy kép dưới đây
-    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyiGwbfUU_geNhZvYIqA2HgtMUE8sa-yZhsMIXBnmKRrbJ3b1U_o2aIaCZq3w2TKUt_/exec";
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
     let API_URL = localStorage.getItem("IQC_GOLDSUN_API_URL") || DEFAULT_API_URL;
+
+    // BẢO MẬT GITHUB PUBLIC: Không lưu cứng Mật khẩu & Danh sách PIN trong mã nguồn HTML
+    let systemPass = "";
+    let sessionAuthPass = "";
+    const STORAGE_KEY_ALL = "GOLDSUN_IQC_MASTER_DATA_V1";
 
     // HÀM LẤY NGÀY THỰC TẾ THEO MÚI GIỜ ĐỊA PHƯƠNG (TỰ ĐỘNG NHẢY KHI SANG NĂM 2027, 2028...)
     function getTodayISO() {
@@ -1340,18 +1340,8 @@
       { id: "tab6", label: "📋 6 · Giao việc & Đánh giá KPI", visible: true }
     ];
 
-    // Danh sách Nhân sự (Admin PIN: 254291)
-    let USERS = [
-      { pin: "254291",   id: "GS.22846", name: "ĐỖ TRUNG KIÊN",       role: "Admin", basePhepOct: 6.0, canAssign: true },
-      { pin: "GS.21736", id: "GS.21736", name: "BÙI THÀNH CÔNG",      role: "IQC",   basePhepOct: 8.5, canAssign: true },
-      { pin: "GS.22562", id: "GS.22562", name: "NGUYỄN ÁNH NGỌC",     role: "IQC",   basePhepOct: 4.5, canAssign: false },
-      { pin: "GS.41474", id: "GS.41474", name: "BÙI THỊ HÀ",          role: "IQC",   basePhepOct: 5.0, canAssign: false },
-      { pin: "GS.49574", id: "GS.49574", name: "NGUYỄN THỊ THU THẢO", role: "IQC",   basePhepOct: 4.0, canAssign: false },
-      { pin: "GS.43242", id: "GS.43242", name: "BÙI THỊ KIM THOA",    role: "IQC",   basePhepOct: 1.0, canAssign: false },
-      { pin: "GS.47963", id: "GS.47963", name: "NÔNG THỊ VƯƠNG",      role: "IQC",   basePhepOct: 1.0, canAssign: false },
-      { pin: "GS.52459", id: "GS.52459", name: "PHÙNG THỊ HỌC",       role: "IQC",   basePhepOct: 5.0, canAssign: false },
-      { pin: "GS.52460", id: "GS.52460", name: "PHƯƠNG THỊ HUYỀN",    role: "IQC",   basePhepOct: 5.0, canAssign: false }
-    ];
+    // Danh sách Nhân sự để trống trên GitHub (Tự động tải từ Google Sheets sau khi mở khóa)
+    let USERS = [];
 
     let monthlyLeaveRecords = {};
     let lotData = [];
@@ -1367,7 +1357,6 @@
       if (!data || typeof data !== 'object') return false;
       if (data.systemPass && String(data.systemPass).trim() !== "") {
         systemPass = String(data.systemPass).trim();
-        localStorage.setItem("IQC_GOLDSUN_SYS_PASS", systemPass);
       }
       if (Array.isArray(data.navMenuItems) && data.navMenuItems.length > 0) {
         const validIds = ["tab1", "tab2", "tab3", "tab4", "tab5", "tab6"];
@@ -1391,7 +1380,7 @@
         TODAY_STR = getTodayISO();
         const payload = {
           updatedAt: new Date().toISOString(),
-          systemPass,
+          systemPass: systemPass || sessionAuthPass,
           syncUsersFromWeb: syncUsersFlag,
           navMenuItems,
           USERS,
@@ -1423,18 +1412,26 @@
       } catch (e) {}
     }
 
-    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (ĐỒNG BỘ CẢ SHEET NHAN_SU_PIN VÀO WEB)
+    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (CÓ ĐÍNH KÈM MẬT KHẨU XÁC THỰC)
     async function pullAllDataFromCloud(showAlert = false) {
       if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
         updateSyncStatusBadge("local");
         return false;
       }
+      const passToUse = sessionAuthPass || systemPass;
+      if (!passToUse) return false;
+
       updateSyncStatusBadge("syncing", "⏳ Đang tải từ Sheet...");
       try {
-        const resp = await fetch(`${API_URL}?action=load&t=${Date.now()}`, { method: "GET" });
+        const resp = await fetch(`${API_URL}?action=load&pass=${encodeURIComponent(passToUse)}&t=${Date.now()}`, { method: "GET" });
         const json = await resp.json();
+        if (json && json.status === "unauthorized") {
+          updateSyncStatusBadge("error", "🔒 Sai mật khẩu");
+          return "UNAUTHORIZED";
+        }
         if (json && json.status === "ok" && json.data && Array.isArray(json.data.USERS)) {
           applyDataObjectToMemory(json.data);
+          sessionAuthPass = systemPass || passToUse;
           localStorage.setItem(STORAGE_KEY_ALL, JSON.stringify(json.data));
           if (currentUser) {
             const updatedMe = USERS.find(u => u.id === currentUser.id);
@@ -1458,7 +1455,7 @@
     // ================= QUẢN LÝ ĐỔI PASSWORD DASHBOARD & PIN NHÂN VIÊN (ADMIN) =================
     function openSecurityModal() {
       if (!currentUser || currentUser.role !== "Admin") return;
-      document.getElementById('cfgSystemPassInput').value = systemPass;
+      document.getElementById('cfgSystemPassInput').value = systemPass || sessionAuthPass;
       const tbody = document.getElementById('securityUsersBody');
       tbody.innerHTML = '';
       USERS.forEach((u, i) => {
@@ -1487,7 +1484,6 @@
         return;
       }
       systemPass = newSysPass;
-      localStorage.setItem("IQC_GOLDSUN_SYS_PASS", systemPass);
 
       USERS.forEach((u, i) => {
         const nameEl = document.getElementById(`secName_${i}`);
@@ -1646,18 +1642,44 @@
       renderSidebarNav();
     }
 
-    // ================= 1. MỞ KHÓA DASHBOARD =================
+    // ================= 1. MỞ KHÓA DASHBOARD (XÁC THỰC TRỰC TIẾP QUA GOOGLE SHEETS) =================
     async function unlockDashboard() {
       const val = (document.getElementById('gatePass').value || "").trim();
-      if (val.toUpperCase() === systemPass.toUpperCase()) {
+      const errEl = document.getElementById('gateErr');
+      if (!val) {
+        errEl.innerText = "Vui lòng nhập mật khẩu hệ thống!";
+        return;
+      }
+
+      if (API_URL && API_URL.startsWith("https://script.google.com")) {
+        errEl.style.color = "var(--info)";
+        errEl.innerText = "⏳ Đang xác thực mật khẩu với Google Sheets...";
+        sessionAuthPass = val;
+        const result = await pullAllDataFromCloud(false);
+        if (result === "UNAUTHORIZED") {
+          sessionAuthPass = "";
+          errEl.style.color = "var(--danger)";
+          errEl.innerText = "❌ Mật khẩu không đúng! Vui lòng nhập lại.";
+          return;
+        }
+        errEl.innerText = "";
         document.getElementById('gateOverlay').classList.add('hidden');
         syncAllFiltersToRealTime();
         refreshAllViews();
-        if (API_URL && API_URL.startsWith("https://script.google.com")) {
-          await pullAllDataFromCloud(false);
-        }
       } else {
-        document.getElementById('gateErr').innerText = "Mật khẩu không đúng! Vui lòng nhập lại.";
+        // Chế độ chạy Offline trên máy khi chưa gắn DEFAULT_API_URL
+        loadStateFromLocal();
+        const checkPass = systemPass || val;
+        if (val.toUpperCase() === checkPass.toUpperCase()) {
+          sessionAuthPass = val;
+          systemPass = checkPass;
+          document.getElementById('gateOverlay').classList.add('hidden');
+          syncAllFiltersToRealTime();
+          refreshAllViews();
+        } else {
+          errEl.style.color = "var(--danger)";
+          errEl.innerText = "Mật khẩu không đúng! Vui lòng nhập lại.";
+        }
       }
     }
 
@@ -1707,7 +1729,7 @@
       if (isAuto) alert("Đã hết 20 phút phiên làm việc! Hệ thống tự động đăng xuất PIN và làm mới dữ liệu.");
     }
 
-    // ================= 3. TAB 1: KẾ THỪA PHÉP CÒN LẠI QUA CÁC THÁNG & CÁC NĂM (2026 -> 2027...) =================
+    // ================= 3. TAB 1: KẾ THỪA PHÉP CÒN LẠI QUA CÁC THÁNG & CÁC NĂM =================
     function getLeaveRecordBucket(year, month) {
       if (year === 2026 && monthlyLeaveRecords[month]) {
         return monthlyLeaveRecords[month];
@@ -2242,7 +2264,7 @@
       });
     }
 
-    // ================= 7. TAB 4: TÍNH PHÍ CLAIM FEE NCC (ĐÃ FIX TỰ ĐỘNG NHẢY SỐ GIỜ LỌC KỂ CẢ KHI CHƯA NHẬP SỐ NGƯỜI) =================
+    // ================= 7. TAB 4: TÍNH PHÍ CLAIM FEE NCC (AUTO NHẢY GIỜ LỌC 24H) =================
     function generateAutoNCRForDate(dateStr) {
       const dStr = dateStr || getTodayISO();
       const ymd = dStr.replace(/-/g, "");
@@ -2664,7 +2686,7 @@
       });
     }
 
-    // --- TAB CON 5.3: BÁO CÁO LINE NGANG TỰ ĐỘNG ĐỒNG BỘ TỪ EQUIPLIST (HỖ TRỢ ĐA NĂM 2026, 2027...) ---
+    // --- TAB CON 5.3: BÁO CÁO LINE NGANG TỰ ĐỘNG ĐỒNG BỘ TỪ EQUIPLIST ---
     function getEquipDailyMatrixKey(year, month, shift) {
       if (year === 2026 && equipDailyMatrixData[`${month}_${shift}`]) {
         return `${month}_${shift}`;
@@ -3243,7 +3265,7 @@
         system: "GOLDSUN_IQC_QCS",
         backupDate: new Date().toISOString(),
         exportedBy: currentUser.name,
-        systemPass,
+        systemPass: systemPass || sessionAuthPass,
         navMenuItems,
         USERS,
         monthlyLeaveRecords,
@@ -3314,6 +3336,10 @@
         API_URL = url;
         localStorage.setItem("IQC_GOLDSUN_API_URL", url);
         const ok = await pullAllDataFromCloud(false);
+        if (ok === "UNAUTHORIZED") {
+          statusEl.innerHTML = "<span style='color:#dc2626;'>❌ Mật khẩu hiện tại không khớp với ô H2 trên Sheet NHAN_SU_PIN!</span>";
+          return;
+        }
         statusEl.innerHTML = ok
           ? "<span style='color:#15803d;'>✅ Kết nối thành công & Đã đồng bộ dữ liệu từ Sheet về máy!</span>"
           : "<span style='color:#15803d;'>✅ Đường dẫn hợp lệ! (Sheet hiện đang trống, hãy bấm 'Đẩy dữ liệu lên Sheet')</span>";
@@ -3346,13 +3372,15 @@
       try {
         const rawObj = JSON.parse(localStorage.getItem(STORAGE_KEY_ALL) || "{}");
         rawObj.syncUsersFromWeb = syncUsersFlag;
-        rawObj.systemPass = systemPass;
+        rawObj.authPass = sessionAuthPass || systemPass;
+        rawObj.systemPass = systemPass || sessionAuthPass;
         await fetch(url, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(rawObj)
         });
+        if (syncUsersFlag && systemPass) sessionAuthPass = systemPass;
         updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
         if (showAlert) alert("☁️ Đã đẩy toàn bộ dữ liệu 6 hạng mục lên Google Sheets thành công!");
       } catch (err) {
@@ -3389,15 +3417,10 @@
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-    // Khởi tạo dữ liệu đã lưu trong máy và tự động tải từ Cloud ngay cả ở màn hình khóa (để đồng bộ Pass & PIN mới nhất từ Sheet)
-    window.addEventListener('DOMContentLoaded', async () => {
+    // BẢO MẬT: Không tự động tải dữ liệu trước khi người dùng nhập đúng Password ở màn hình khóa
+    window.addEventListener('DOMContentLoaded', () => {
       syncAllFiltersToRealTime();
-      loadStateFromLocal();
       renderSidebarNav();
-      renderDailyBulletin();
-      if (API_URL && API_URL.startsWith("https://script.google.com")) {
-        await pullAllDataFromCloud(false);
-      }
     });
   </script>
 </body>
