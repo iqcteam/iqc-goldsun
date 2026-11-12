@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="no-referrer">
   <title>GOLDSUN - Quality Control System</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
@@ -216,6 +217,15 @@
       .sticky-col-1 { min-width: 58px !important; font-size: 10px !important; }
       .sticky-col-2 { left: 58px !important; min-width: 130px !important; font-size: 10px !important; }
     }
+
+    /* HỆ THỐNG TOAST THÔNG BÁO BẢO MẬT & MODAL AN TOÀN */
+    .gs-toast-container { position: fixed; top: 16px; right: 16px; z-index: 10005; display: flex; flex-direction: column; gap: 8px; max-width: 380px; width: calc(100% - 32px); pointer-events: none; }
+    .gs-toast { pointer-events: auto; background: #fff; border-left: 5px solid var(--primary-med); border-radius: 8px; padding: 12px 14px; box-shadow: 0 10px 25px rgba(15,23,42,0.18); font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); animation: gsToastIn 0.2s ease-out; }
+    .gs-toast.toast-error { border-left-color: var(--danger); background: #fffcfc; }
+    .gs-toast.toast-warn { border-left-color: var(--warning); background: #fffef7; }
+    .gs-toast.toast-info { border-left-color: var(--info); background: #f8fbff; }
+    @keyframes gsToastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .sec-shield-pill { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
   </style>
 </head>
 <body>
@@ -236,8 +246,17 @@
         <input type="password" id="gatePass" name="password" autocomplete="current-password" placeholder="Nhập Password hệ thống..." style="padding-right:44px;">
         <button type="button" onclick="togglePinVisibility('gatePass', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; color:#64748b; padding:2px;" title="Hiển thị / Ẩn mật khẩu">👁️</button>
       </div>
-      <button type="submit" class="btn btn-green" style="width: 100%; justify-content: center; padding: 10px;">ĐĂNG NHẬP DASHBOARD</button>
+      <button type="submit" id="btnGateSubmit" class="btn btn-green" style="width: 100%; justify-content: center; padding: 10px;">ĐĂNG NHẬP DASHBOARD</button>
       <div id="gateErr" style="color: var(--danger); font-size: 12px; margin-top: 8px;"></div>
+      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted);">
+        <span>🛡️ Bảo mật AES-256 & SHA-256</span>
+        <button type="button" onclick="toggleGateUrlSetup()" style="background:none; border:none; color:var(--primary-med); font-weight:700; cursor:pointer; font-size:11px;">⚙️ Kết nối Sheet</button>
+      </div>
+      <div id="gateUrlSetupBox" class="hidden" style="margin-top: 8px; text-align: left; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">Link Google Apps Script (/exec) hoặc Mã hóa:</label>
+        <input type="text" id="gateCustomApiInput" placeholder="Dán link https://script.google.com/.../exec" style="margin: 0 0 6px 0; font-size: 11px; padding: 6px 8px; text-align: left;">
+        <button type="button" class="btn btn-blue" style="width: 100%; justify-content: center; padding: 6px;" onclick="saveGateCustomApiUrl()">Lưu Kết Nối Sheet</button>
+      </div>
     </form>
   </div>
 
@@ -286,12 +305,14 @@
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span class="sec-shield-pill" title="Dữ liệu lưu cục bộ được mã hóa AES-GCM 256-bit, PIN băm SHA-256, chống XSS & ẩn biến Console">🛡️ Đã bật Bảo Mật GitHub</span>
         <div id="userBadge" class="user-pill hidden">
           <span>👤 <span id="loggedUserName">User_Name</span></span>
           <button type="button" class="btn btn-outline" style="border:none; color:var(--danger); padding:2px 5px;" onclick="logoutPIN()">[Thoát]</button>
         </div>
         <button type="button" id="btnOpenPin" class="btn btn-green" onclick="openPinModal()">🔑 Đăng Nhập PIN (ID)</button>
+        <button type="button" class="btn btn-outline" style="border-color:#dc2626; color:#b91c1c;" onclick="lockDashboardGate()" title="Khóa màn hình bảo vệ ngay lập tức">🔒 Khóa</button>
       </div>
     </div>
 
@@ -754,7 +775,10 @@
           1. MẬT KHẨU MỞ KHÓA DASHBOARD CHUNG (SYSTEM PASSWORD):
         </label>
         <div style="display:flex; gap:8px; align-items:center;">
-          <input type="text" id="cfgSystemPassInput" class="form-control" style="font-weight:bold; color:var(--primary);" placeholder="Nhập mật khẩu mở khóa hệ thống...">
+          <div style="position:relative; flex:1;">
+            <input type="password" id="cfgSystemPassInput" class="form-control" style="font-weight:bold; color:var(--primary); padding-right:38px;" placeholder="Nhập mật khẩu mở khóa hệ thống...">
+            <button type="button" onclick="togglePinVisibility('cfgSystemPassInput', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px;" title="Hiện/Ẩn mật khẩu hệ thống">👁️</button>
+          </div>
           <span style="font-size:11px; color:#64748b; white-space:nowrap;">(Đồng bộ với ô H2 trên Sheet NHAN_SU_PIN)</span>
         </div>
       </div>
@@ -870,8 +894,17 @@
         Dán đường link Web App (kết thúc bằng <b>/exec</b>) từ Google Apps Script. Khi đưa lên <b>GitHub Pages</b>, bạn hãy dán luôn link này vào biến <code>DEFAULT_API_URL</code> trong code để mọi máy nhân viên đều tự động kết nối.
       </div>
       <div class="form-group">
-        <label>Đường dẫn API Web App URL (/exec):</label>
-        <input type="text" id="cfgApiUrlInput" class="form-control" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="font-family: monospace; font-size: 12px;">
+        <label>Đường dẫn API Web App URL (/exec) hoặc Mã bảo mật GS_ENC_V2:</label>
+        <input type="password" id="cfgApiUrlInput" class="form-control" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="font-family: monospace; font-size: 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+          <button type="button" class="btn btn-outline" style="font-size:11px; padding:4px 8px;" onclick="togglePinVisibility('cfgApiUrlInput', this)">👁️ Hiện/Ẩn URL</button>
+          <button type="button" class="btn btn-outline" style="font-size:11px; padding:4px 8px; color:var(--primary); border-color:var(--primary-med);" onclick="generateEncodedTokenForGithub()">🛡️ Tạo Mã Hóa URL Cho GitHub</button>
+        </div>
+        <div id="githubTokenResultBox" class="hidden" style="margin-top:8px; padding:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:11px;">
+          <div style="font-weight:700; color:#15803d; margin-bottom:4px;">Mã bảo mật thay cho link /exec trong code GitHub (chống bot quét link):</div>
+          <input type="text" id="githubTokenOutput" class="form-control" readonly style="font-family:monospace; font-size:11px; background:#fff; margin-bottom:6px;">
+          <button type="button" class="btn btn-green" style="font-size:11px; padding:4px 10px;" onclick="copyGithubEncodedToken()">📋 Copy Mã Bảo Mật</button>
+        </div>
       </div>
       <div id="sheetConnectionStatus" style="font-size: 12px; margin-bottom: 12px; padding: 8px 10px; border-radius: 6px; background: #f8fafc; border: 1px solid var(--border);">
         Trạng thái: <span id="statusTextConnect" style="font-weight:700; color:#64748b;">Chưa kiểm tra</span>
@@ -1150,23 +1183,339 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL XÁC NHẬN PHỤC HỒI DỮ LIỆU BACKUP (THAY THẾ CONFIRM) -->
+  <div id="confirmRestoreModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">📤</div>
+      <h3 style="color: var(--primary); margin-bottom: 10px;">Xác Nhận Phục Hồi Dữ Liệu</h3>
+      <p id="confirmRestoreText" style="font-size: 13px; color: var(--text); margin-bottom: 18px;">Bạn có chắc chắn muốn khôi phục dữ liệu từ bản sao lưu này không?</p>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="cancelRestoreConfirm()">Hủy</button>
+        <button type="button" class="btn btn-green" style="flex:1; justify-content:center;" onclick="executeRestoreConfirm()">Xác Nhận Phục Hồi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM ẢNH MINH CHỨNG AN TOÀN (THAY THẾ WINDOW.OPEN TRÁNH XSS) -->
+  <div id="imagePreviewModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('imagePreviewModal')">
+    <div class="modal-box" style="max-width: 760px; text-align: center;">
+      <div class="modal-header">
+        <h3>🖼️ Xem Ảnh Minh Chứng / Bản Mẫu / Tem Hiệu Chuẩn</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('imagePreviewModal')">✕</button>
+      </div>
+      <div style="background:#0f172a; padding:12px; border-radius:8px; overflow:auto; max-height:75vh;">
+        <img id="lightboxPreviewImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Ảnh minh chứng" style="max-width:100%; max-height:68vh; border-radius:6px; object-fit:contain;">
+      </div>
+    </div>
+  </div>
+
+  <!-- KHUNG HIỂN THỊ THÔNG BÁO TOAST NỘI BỘ -->
+  <div id="gsToastContainer" class="gs-toast-container"></div>
   <script>
+  (function() {
+    'use strict';
+
     try {
       if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
       }
     } catch (err) {}
 
-    // DÁN ĐƯỜNG LINK /exec CỦA GOOGLE APPS SCRIPT VÀO GIỮA 2 DẤU NHÁY KÉP DƯỚI ĐÂY TRƯỚC KHI ĐƯA LÊN GITHUB:
-    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbyiGwbfUU_geNhZvYIqA2HgtMUE8sa-yZhsMIXBnmKRrbJ3b1U_o2aIaCZq3w2TKUt_/exec";
-	let API_URL = DEFAULT_API_URL || localStorage.getItem("IQC_GOLDSUN_API_URL");
+    // =========================================================================
+    // LỚP BẢO MẬT 1: MÃ HÓA ĐƯỜNG DẪN WEB APP GOOGLE SHEETS & CHỐNG QUÉT GITHUB
+    // =========================================================================
+    const _XOR_SECRET = "GOLDSUN_IQC_SEC_2026_KEY";
+    const DEFAULT_API_TOKEN = "GS_ENC_V2:Lzs4NCBvYXA6MjE2IzFtOF1fVVo6ZSY2KmAhJTAnISxmImweGCM6PFBJW3EoKSMMEhArIR09FCkQGDIeYQ0kK39ldw4sKmggHSc/CRoNDDEkGhEtMQ9wPQNlbVltKgw4BBU9dyRnGhQcJRxwNj0mPA==";
+    const API_STORAGE_KEY = "IQC_GOLDSUN_API_TOKEN_V2";
+    const LEGACY_API_STORAGE_KEY = "IQC_GOLDSUN_API_URL";
+    const STORAGE_KEY_VAULT = "GOLDSUN_IQC_SECURE_VAULT_V2";
+    const LEGACY_STORAGE_KEY_ALL = "GOLDSUN_IQC_MASTER_DATA_V1";
 
-    // BẢO MẬT GITHUB PUBLIC: Không lưu mật khẩu và danh sách nhân sự trong mã nguồn HTML
+    function encodeEndpointToken(plainUrl) {
+      if (!plainUrl) return "";
+      const s = String(plainUrl).trim();
+      if (s.startsWith("GS_ENC_V2:")) return s;
+      try {
+        const utf8Bytes = new TextEncoder().encode(s);
+        const keyBytes = new TextEncoder().encode(_XOR_SECRET);
+        const out = new Uint8Array(utf8Bytes.length);
+        for (let i = 0; i < utf8Bytes.length; i++) {
+          out[i] = utf8Bytes[i] ^ keyBytes[i % keyBytes.length];
+        }
+        let binary = "";
+        for (let i = 0; i < out.length; i++) binary += String.fromCharCode(out[i]);
+        return "GS_ENC_V2:" + btoa(binary);
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function decodeEndpointToken(tokenOrUrl) {
+      if (!tokenOrUrl) return "";
+      const s = String(tokenOrUrl).trim();
+      if (s.startsWith("https://script.google.com/macros/s/")) return s;
+      if (!s.startsWith("GS_ENC_V2:")) return "";
+      try {
+        const b64 = s.slice("GS_ENC_V2:".length);
+        const binary = atob(b64);
+        const keyBytes = new TextEncoder().encode(_XOR_SECRET);
+        const out = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          out[i] = binary.charCodeAt(i) ^ keyBytes[i % keyBytes.length];
+        }
+        const decoded = new TextDecoder().decode(out).trim();
+        return decoded.startsWith("https://script.google.com/macros/s/") ? decoded : "";
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function safeStorageGet(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function safeStorageSet(key, val) {
+      try { localStorage.setItem(key, val); } catch (e) {}
+    }
+    function safeStorageRemove(key) {
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    function purgeLegacyPlaintextStorage() {
+      try {
+        const legacyUrl = safeStorageGet(LEGACY_API_STORAGE_KEY);
+        if (legacyUrl && legacyUrl.startsWith("https://script.google.com")) {
+          safeStorageSet(API_STORAGE_KEY, encodeEndpointToken(legacyUrl));
+        }
+        safeStorageRemove(LEGACY_API_STORAGE_KEY);
+        safeStorageRemove(LEGACY_STORAGE_KEY_ALL);
+      } catch (e) {}
+    }
+    purgeLegacyPlaintextStorage();
+
+    let API_URL = decodeEndpointToken(safeStorageGet(API_STORAGE_KEY)) || decodeEndpointToken(DEFAULT_API_TOKEN);
+
+    // =========================================================================
+    // LỚP BẢO MẬT 2: BIẾN TRẠNG THÁI ĐÓNG GÓI TRONG CLOSURE & BĂM PIN SHA-256
+    // =========================================================================
     let systemPass = "";
     let sessionAuthPass = "";
-    const STORAGE_KEY_ALL = "GOLDSUN_IQC_MASTER_DATA_V1";
+    let sessionAdminPin = "";
+    let currentUser = null;
+    let tempBase64 = "";
+    let activeLeaveCell = null;
+    let activeEquipDailyCell = null;
+    let currentActiveTabId = "tab1";
+    const PIN_HASH_SALT = "GOLDSUN_PIN_SALT_2026";
 
-    // HÀM LẤY NGÀY THỰC TẾ THEO MÚI GIỜ ĐỊA PHƯƠNG (TỰ ĐỘNG NHẢY KHI SANG NĂM 2027, 2028...)
+    // Hàm băm SHA-256 đồng bộ khớp 100% với computePinHash() bên trong Code.gs
+    function sha256HexSync(asciiStr) {
+      const utf8 = new TextEncoder().encode(String(asciiStr || ""));
+      const K = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+      ];
+      function rotr(n, x) { return (x >>> n) | (x << (32 - n)); }
+      const l = utf8.length;
+      const bitLen = l * 8;
+      const padLen = ((l + 9 + 63) >> 6) << 6;
+      const buf = new Uint8Array(padLen);
+      buf.set(utf8);
+      buf[l] = 0x80;
+      const dv = new DataView(buf.buffer);
+      dv.setUint32(padLen - 4, bitLen >>> 0, false);
+      dv.setUint32(padLen - 8, Math.floor(bitLen / 0x100000000), false);
+      let H0 = 0x6a09e667, H1 = 0xbb67ae85, H2 = 0x3c6ef372, H3 = 0xa54ff53a;
+      let H4 = 0x510e527f, H5 = 0x9b05688c, H6 = 0x1f83d9ab, H7 = 0x5be0cd19;
+      const W = new Uint32Array(64);
+      for (let offset = 0; offset < padLen; offset += 64) {
+        for (let i = 0; i < 16; i++) W[i] = dv.getUint32(offset + i * 4, false);
+        for (let i = 16; i < 64; i++) {
+          const s0 = rotr(7, W[i - 15]) ^ rotr(18, W[i - 15]) ^ (W[i - 15] >>> 3);
+          const s1 = rotr(17, W[i - 2]) ^ rotr(19, W[i - 2]) ^ (W[i - 2] >>> 10);
+          W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+        }
+        let a = H0, b = H1, c = H2, d = H3, e = H4, f = H5, g = H6, h = H7;
+        for (let i = 0; i < 64; i++) {
+          const S1 = rotr(6, e) ^ rotr(11, e) ^ rotr(25, e);
+          const ch = (e & f) ^ (~e & g);
+          const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
+          const S0 = rotr(2, a) ^ rotr(13, a) ^ rotr(22, a);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (S0 + maj) >>> 0;
+          h = g; g = f; f = e; e = (d + temp1) >>> 0;
+          d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+        }
+        H0 = (H0 + a) >>> 0; H1 = (H1 + b) >>> 0; H2 = (H2 + c) >>> 0; H3 = (H3 + d) >>> 0;
+        H4 = (H4 + e) >>> 0; H5 = (H5 + f) >>> 0; H6 = (H6 + g) >>> 0; H7 = (H7 + h) >>> 0;
+      }
+      return [H0, H1, H2, H3, H4, H5, H6, H7].map(x => ("00000000" + x.toString(16)).slice(-8)).join("");
+    }
+
+    function computeClientPinHash(empId, rawPin) {
+      const cleanId = String(empId || "").trim().toUpperCase();
+      const cleanPin = String(rawPin || "").trim().toUpperCase();
+      return sha256HexSync(PIN_HASH_SALT + "::" + cleanId + "::" + cleanPin);
+    }
+
+    const MAX_AUTH_ATTEMPTS = 5;
+    const LOCKOUT_DURATION_MS = 60 * 1000;
+    let gateFailCount = 0;
+    let gateLockUntil = 0;
+    let pinFailCount = 0;
+    let pinLockUntil = 0;
+
+    try {
+      gateLockUntil = parseInt(sessionStorage.getItem("GS_IQC_GATE_LOCK") || "0", 10) || 0;
+      pinLockUntil = parseInt(sessionStorage.getItem("GS_IQC_PIN_LOCK") || "0", 10) || 0;
+    } catch (e) {}
+
+    // =========================================================================
+    // LỚP BẢO MẬT 3: CHỐNG XSS, SANITIZE DỮ LIỆU & THÔNG BÁO TOAST AN TOÀN
+    // =========================================================================
+    function escapeHtml(val) {
+      if (val === null || val === undefined) return "";
+      return String(val)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function sanitizeImageSrc(src) {
+      if (!src || typeof src !== "string") return "";
+      const s = src.trim();
+      if (/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=\s]+$/i.test(s)) return s;
+      if (/^https:\/\/[a-zA-Z0-9._~:/?#\[\]@!$&'()*+,;=%-]+$/.test(s)) return s;
+      return "";
+    }
+
+    function sanitizeImportedObject(obj) {
+      if (obj === null || typeof obj !== "object") return obj;
+      if (Array.isArray(obj)) return obj.map(sanitizeImportedObject);
+      const clean = {};
+      for (const key of Object.keys(obj)) {
+        if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
+        clean[key] = sanitizeImportedObject(obj[key]);
+      }
+      return clean;
+    }
+
+    function showToast(message, type = "info") {
+      const container = document.getElementById("gsToastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      let cls = "gs-toast";
+      if (type === "error") cls += " toast-error";
+      else if (type === "warn") cls += " toast-warn";
+      else if (type === "info") cls += " toast-info";
+      toast.className = cls;
+
+      const textSpan = document.createElement("span");
+      textSpan.style.lineHeight = "1.4";
+      textSpan.textContent = String(message || "");
+
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.textContent = "✕";
+      closeBtn.style.cssText = "background:none;border:none;color:#64748b;cursor:pointer;font-size:12px;font-weight:bold;padding:0 2px;";
+      closeBtn.onclick = () => toast.remove();
+
+      toast.appendChild(textSpan);
+      toast.appendChild(closeBtn);
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+      }, 4500);
+    }
+
+    function isAdminSession() {
+      return Boolean(currentUser && currentUser.role === "Admin" && (sessionAuthPass || systemPass));
+    }
+
+    // =========================================================================
+    // LỚP BẢO MẬT 4: MÃ HÓA AES-GCM 256-BIT (WEB CRYPTO API) CHO LOCALSTORAGE
+    // =========================================================================
+    async function deriveAesKey(passphrase, saltBytes) {
+      const enc = new TextEncoder();
+      const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        enc.encode(passphrase + "::GOLDSUN_IQC_PEPPER_V2"),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+      return window.crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: saltBytes,
+          iterations: 100000,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    function bytesToBase64(bytes) {
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+
+    function base64ToBytes(b64) {
+      const bin = atob(b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    async function encryptVaultPayload(plainObj, passphrase) {
+      if (!passphrase || !window.crypto || !window.crypto.subtle) return null;
+      try {
+        const salt = window.crypto.getRandomValues(new Uint8Array(16));
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveAesKey(passphrase, salt);
+        const encoded = new TextEncoder().encode(JSON.stringify(plainObj));
+        const cipherBuf = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
+        return JSON.stringify({
+          v: 2,
+          s: bytesToBase64(salt),
+          iv: bytesToBase64(iv),
+          ct: bytesToBase64(new Uint8Array(cipherBuf))
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function decryptVaultPayload(rawVaultStr, passphrase) {
+      if (!rawVaultStr || !passphrase || !window.crypto || !window.crypto.subtle) return null;
+      try {
+        const pkg = JSON.parse(rawVaultStr);
+        if (!pkg || pkg.v !== 2 || !pkg.s || !pkg.iv || !pkg.ct) return null;
+        const salt = base64ToBytes(pkg.s);
+        const iv = base64ToBytes(pkg.iv);
+        const ct = base64ToBytes(pkg.ct);
+        const key = await deriveAesKey(passphrase, salt);
+        const plainBuf = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+        const jsonStr = new TextDecoder().decode(plainBuf);
+        return sanitizeImportedObject(JSON.parse(jsonStr));
+      } catch (e) {
+        return null;
+      }
+    }
+
     function getTodayISO() {
       const now = new Date();
       const y = now.getFullYear();
@@ -1176,11 +1525,6 @@
     }
 
     let TODAY_STR = getTodayISO();
-    let currentUser = null;
-    let tempBase64 = "";
-    let activeLeaveCell = null;
-    let activeEquipDailyCell = null;
-    let currentActiveTabId = "tab1";
 
     function formatDateVN(dateStr) {
       if (!dateStr) return "";
@@ -1189,10 +1533,9 @@
         const [y, m, d] = s.split('-');
         return `${d}/${m}/${y}`;
       }
-      return s;
+      return escapeHtml(s);
     }
 
-    // HỖ TRỢ NHẬP TAY GIỜ LỌC 24H (00:00 -> 23:59) VÀ TỰ NHẢY SỐ GIỜ NGAY KHI GÕ
     function autoFormatTime24h(inp) {
       let digits = inp.value.replace(/[^\d:hH.]/g, '');
       if (/^\d{4}$/.test(digits)) {
@@ -1265,16 +1608,15 @@
         el.style.background = "#fee2e2";
         el.style.color = "#b91c1c";
         el.style.borderColor = "#fecaca";
-        el.innerText = text || "⚠️ Lỗi đồng bộ (Đã lưu máy)";
+        el.innerText = text || "⚠️ Lỗi đồng bộ (Đã mã hóa máy)";
       } else {
         el.style.background = "#f8fafc";
         el.style.color = "#64748b";
         el.style.borderColor = "#cbd5e1";
-        el.innerText = text || "💻 Lưu nội bộ";
+        el.innerText = text || "💻 Lưu mã hóa nội bộ";
       }
     }
 
-    // Tự động khởi tạo danh sách Năm động (Tự mở rộng khi sang 2027, 2028...)
     function populateDynamicYearDropdowns() {
       const curY = new Date().getFullYear();
       const startY = 2025;
@@ -1301,7 +1643,6 @@
       });
     }
 
-    // Đồng bộ toàn bộ bộ lọc Tháng/Năm về đúng thời gian thực khi mở trang
     function syncAllFiltersToRealTime() {
       TODAY_STR = getTodayISO();
       populateDynamicYearDropdowns();
@@ -1330,7 +1671,6 @@
       });
     }
 
-    // Danh sách 6 Menu Hạng Mục chuẩn
     let navMenuItems = [
       { id: "tab1", label: "📅 1 · Báo cáo nghỉ 44h Bộ Phận IQC", visible: true },
       { id: "tab2", label: "⚙️ 2 · Báo cáo Lot phát sinh", visible: true },
@@ -1340,9 +1680,7 @@
       { id: "tab6", label: "📋 6 · Giao việc & Đánh giá KPI", visible: true }
     ];
 
-    // Danh sách Nhân sự rỗng hoàn toàn trên GitHub (Chỉ nạp vào bộ nhớ sau khi xác thực đúng Password với Google Sheets)
     let USERS = [];
-
     let monthlyLeaveRecords = {};
     let lotData = [];
     let ngPendingData = [];
@@ -1352,68 +1690,102 @@
     let equipDailyMatrixData = {};
     let taskList = [];
 
-    // ================= LƯU TRỮ & ĐỒNG BỘ 2 CHIỀU GOOGLE SHEETS =================
-    function applyDataObjectToMemory(data) {
+    // ================= LƯU TRỮ MÃ HÓA & ĐỒNG BỘ 2 CHIỀU GOOGLE SHEETS =================
+    function applyDataObjectToMemory(rawInput) {
+      const data = sanitizeImportedObject(rawInput);
       if (!data || typeof data !== 'object') return false;
       if (data.systemPass && String(data.systemPass).trim() !== "") {
         systemPass = String(data.systemPass).trim();
       }
       if (Array.isArray(data.navMenuItems) && data.navMenuItems.length > 0) {
         const validIds = ["tab1", "tab2", "tab3", "tab4", "tab5", "tab6"];
-        const filteredNav = data.navMenuItems.filter(item => validIds.includes(item.id));
+        const filteredNav = data.navMenuItems.filter(item => item && validIds.includes(item.id));
         if (filteredNav.length > 0) navMenuItems = filteredNav;
       }
-      if (Array.isArray(data.USERS) && data.USERS.length > 0) USERS = data.USERS;
-      if (data.monthlyLeaveRecords) monthlyLeaveRecords = data.monthlyLeaveRecords;
+      if (Array.isArray(data.USERS) && data.USERS.length > 0) {
+        USERS = data.USERS.map(u => ({
+          pin: String(u.pin || "").trim(),
+          pinHash: String(u.pinHash || "").trim().toLowerCase(),
+          id: String(u.id || "").trim(),
+          name: String(u.name || "").trim(),
+          role: u.role === "Admin" ? "Admin" : "IQC",
+          basePhepOct: parseFloat(u.basePhepOct) || 0,
+          canAssign: Boolean(u.canAssign || u.role === "Admin")
+        }));
+      }
+      if (data.monthlyLeaveRecords && typeof data.monthlyLeaveRecords === 'object') monthlyLeaveRecords = data.monthlyLeaveRecords;
       if (Array.isArray(data.lotData)) lotData = data.lotData;
       if (Array.isArray(data.ngPendingData)) ngPendingData = data.ngPendingData;
       if (Array.isArray(data.claimData)) claimData = data.claimData;
       if (Array.isArray(data.sampleList)) sampleList = data.sampleList;
       if (Array.isArray(data.equipList)) equipList = data.equipList;
-      if (data.equipDailyMatrixData) equipDailyMatrixData = data.equipDailyMatrixData;
+      if (data.equipDailyMatrixData && typeof data.equipDailyMatrixData === 'object') equipDailyMatrixData = data.equipDailyMatrixData;
       if (Array.isArray(data.taskList)) taskList = data.taskList;
       return true;
+    }
+
+    function buildCleanMemoryPayload(syncUsersFlag = false) {
+      const allowUserSync = Boolean(syncUsersFlag && isAdminSession());
+      return {
+        updatedAt: new Date().toISOString(),
+        syncUsersFromWeb: allowUserSync,
+        navMenuItems,
+        USERS,
+        monthlyLeaveRecords,
+        lotData,
+        ngPendingData,
+        claimData,
+        sampleList,
+        equipList,
+        equipDailyMatrixData,
+        taskList
+      };
+    }
+
+    async function persistEncryptedVaultToLocal(payloadObj) {
+      const passKey = sessionAuthPass || systemPass;
+      if (!passKey) return;
+      const safeCopy = Object.assign({}, payloadObj);
+      delete safeCopy.systemPass;
+      delete safeCopy.authPass;
+      delete safeCopy.adminPin;
+      const encryptedStr = await encryptVaultPayload(safeCopy, passKey);
+      if (encryptedStr) {
+        safeStorageSet(STORAGE_KEY_VAULT, encryptedStr);
+      }
     }
 
     function saveStateToLocal(syncUsersFlag = false) {
       try {
         TODAY_STR = getTodayISO();
-        const payload = {
-          updatedAt: new Date().toISOString(),
-          systemPass: systemPass || sessionAuthPass,
-          syncUsersFromWeb: syncUsersFlag,
-          navMenuItems,
-          USERS,
-          monthlyLeaveRecords,
-          lotData,
-          ngPendingData,
-          claimData,
-          sampleList,
-          equipList,
-          equipDailyMatrixData,
-          taskList
-        };
-        localStorage.setItem(STORAGE_KEY_ALL, JSON.stringify(payload));
+        const allowUserSync = Boolean(syncUsersFlag && isAdminSession());
+        const payload = buildCleanMemoryPayload(allowUserSync);
+        persistEncryptedVaultToLocal(payload);
         renderDailyBulletin();
         if (API_URL && API_URL.startsWith("https://script.google.com")) {
-          pushAllDataToCloud(false, syncUsersFlag);
+          pushAllDataToCloud(false, allowUserSync);
         } else {
           updateSyncStatusBadge("local");
         }
       } catch (e) {}
     }
 
-    function loadStateFromLocal() {
+    async function loadStateFromLocal() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY_ALL);
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        applyDataObjectToMemory(data);
+        const rawVault = safeStorageGet(STORAGE_KEY_VAULT);
+        const passKey = sessionAuthPass || systemPass;
+        if (!rawVault || !passKey) return false;
+        const decrypted = await decryptVaultPayload(rawVault, passKey);
+        if (decrypted) {
+          applyDataObjectToMemory(decrypted);
+          return true;
+        }
       } catch (e) {}
+      return false;
     }
 
-    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (ĐÍNH KÈM MẬT KHẨU XÁC THỰC)
-   async function pullAllDataFromCloud(showAlert = false) {
+    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS VỀ MÁY (ĐÍNH KÈM MẬT KHẨU XÁC THỰC & ADMIN PIN NẾU CÓ)
+    async function pullAllDataFromCloud(showAlert = false) {
       if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
         updateSyncStatusBadge("local");
         return false;
@@ -1423,9 +1795,19 @@
 
       updateSyncStatusBadge("syncing", "⏳ Đang tải từ Sheet...");
       try {
-        const resp = await fetch(`${API_URL}?action=load&pass=${encodeURIComponent(passToUse)}&t=${Date.now()}`, {
+        const endpointUrl = new URL(API_URL);
+        endpointUrl.searchParams.set("action", "load");
+        endpointUrl.searchParams.set("pass", passToUse);
+        if (sessionAdminPin) {
+          endpointUrl.searchParams.set("adminPin", sessionAdminPin);
+        }
+        endpointUrl.searchParams.set("t", String(Date.now()));
+
+        const resp = await fetch(endpointUrl.toString(), {
           method: "GET",
-          redirect: "follow"
+          redirect: "follow",
+          credentials: "omit",
+          referrerPolicy: "no-referrer"
         });
         const json = await resp.json();
         if (json && json.status === "unauthorized") {
@@ -1435,57 +1817,78 @@
         if (json && json.status === "ok" && json.data) {
           applyDataObjectToMemory(json.data);
           sessionAuthPass = systemPass || passToUse;
-          localStorage.setItem(STORAGE_KEY_ALL, JSON.stringify(json.data));
+          await persistEncryptedVaultToLocal(buildCleanMemoryPayload(false));
           if (currentUser && USERS.length > 0) {
             const updatedMe = USERS.find(u => u.id === currentUser.id);
             if (updatedMe) currentUser = updatedMe;
           }
           refreshAllViews();
           updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
-          if (showAlert) alert("✅ Đã tải dữ liệu & danh sách nhân sự mới nhất từ Google Sheets!");
+          if (showAlert) showToast("✅ Đã tải dữ liệu & danh sách nhân sự mới nhất từ Google Sheets!", "info");
           return true;
         }
         updateSyncStatusBadge("error", "⚠️ Sheet chưa trả về dữ liệu");
         return false;
       } catch (err) {
+        const fallbackOk = await loadStateFromLocal();
+        if (fallbackOk && USERS.length > 0) {
+          refreshAllViews();
+          updateSyncStatusBadge("error", "⚠️ Chế độ Offline (AES-256)");
+          if (showAlert) showToast("⚠️ Mất kết nối Sheet, đang dùng dữ liệu mã hóa AES-256 lưu trên máy.", "warn");
+          return true;
+        }
         updateSyncStatusBadge("error", "⚠️ Lỗi kết nối Sheet");
-        if (showAlert) alert("Không thể tải từ Google Sheets (" + err.message + ").");
+        if (showAlert) showToast("Không thể tải từ Google Sheets (" + err.message + ").", "error");
         return false;
       }
     }
 
     // ================= QUẢN LÝ ĐỔI PASSWORD DASHBOARD & PIN NHÂN VIÊN (ADMIN) =================
-    function openSecurityModal() {
-      if (!currentUser || currentUser.role !== "Admin") return;
-      document.getElementById('cfgSystemPassInput').value = systemPass || sessionAuthPass;
+    async function openSecurityModal() {
+      if (!isAdminSession()) {
+        showToast("Chỉ Quản trị viên (Admin) mới có quyền truy cập mục Bảo mật!", "error");
+        return;
+      }
+      if (sessionAdminPin && USERS.some(u => !u.pin)) {
+        await pullAllDataFromCloud(false);
+      }
+      const sysInp = document.getElementById('cfgSystemPassInput');
+      sysInp.type = "password";
+      sysInp.value = systemPass || sessionAuthPass;
       const tbody = document.getElementById('securityUsersBody');
       tbody.innerHTML = '';
       USERS.forEach((u, i) => {
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td style="font-weight:bold; color:var(--primary);">${u.id}</td>
-          <td><input type="text" class="form-control" id="secName_${i}" value="${u.name}" style="padding:4px 6px; font-size:12px;"></td>
+          <td style="font-weight:bold; color:var(--primary);">${escapeHtml(u.id)}</td>
+          <td><input type="text" class="form-control" id="secName_${i}" value="${escapeHtml(u.name)}" style="padding:4px 6px; font-size:12px;"></td>
           <td>
             <select class="form-control" id="secRole_${i}" style="padding:4px 6px; font-size:12px;">
               <option value="IQC" ${u.role === 'IQC' ? 'selected' : ''}>IQC</option>
               <option value="Admin" ${u.role === 'Admin' ? 'selected' : ''}>Admin</option>
             </select>
           </td>
-          <td><input type="text" class="form-control" id="secPin_${i}" value="${u.pin}" style="padding:4px 6px; font-size:12px; font-weight:bold; color:#b91c1c;"></td>
-          <td><input type="number" step="0.5" class="form-control" id="secPhep_${i}" value="${u.basePhepOct}" style="padding:4px 6px; font-size:12px; width:80px; margin:0 auto;"></td>
+          <td>
+            <div style="position:relative; display:flex; align-items:center;">
+              <input type="password" class="form-control" id="secPin_${i}" value="${escapeHtml(u.pin)}" placeholder="Nhập PIN mới nếu đổi..." autocomplete="new-password" style="padding:4px 28px 4px 6px; font-size:12px; font-weight:bold; color:#b91c1c;">
+              <button type="button" onclick="togglePinVisibility('secPin_${i}', this)" style="position:absolute; right:4px; background:none; border:none; cursor:pointer; font-size:13px;" title="Hiện/Ẩn mã PIN">👁️</button>
+            </div>
+          </td>
+          <td><input type="number" step="0.5" class="form-control" id="secPhep_${i}" value="${Number(u.basePhepOct) || 0}" style="padding:4px 6px; font-size:12px; width:80px; margin:0 auto;"></td>
         </tr>`;
       });
       openModal('securityModal');
     }
 
     function saveSecurityConfig() {
-      if (!currentUser || currentUser.role !== "Admin") return;
+      if (!isAdminSession()) return;
       const newSysPass = document.getElementById('cfgSystemPassInput').value.trim();
-      if (!newSysPass) {
-        alert("Mật khẩu mở khóa Dashboard không được để trống!");
+      if (!newSysPass || newSysPass.length < 4) {
+        showToast("Mật khẩu mở khóa Dashboard phải có ít nhất 4 ký tự!", "error");
         return;
       }
       systemPass = newSysPass;
+      sessionAuthPass = newSysPass;
 
       USERS.forEach((u, i) => {
         const nameEl = document.getElementById(`secName_${i}`);
@@ -1493,15 +1896,21 @@
         const pinEl = document.getElementById(`secPin_${i}`);
         const phepEl = document.getElementById(`secPhep_${i}`);
         if (nameEl && nameEl.value.trim()) u.name = nameEl.value.trim().toUpperCase();
-        if (roleEl) u.role = roleEl.value;
-        if (pinEl && pinEl.value.trim()) u.pin = pinEl.value.trim();
+        if (roleEl) u.role = roleEl.value === "Admin" ? "Admin" : "IQC";
+        if (pinEl && pinEl.value.trim()) {
+          u.pin = pinEl.value.trim();
+          u.pinHash = computeClientPinHash(u.id, u.pin);
+          if (currentUser && u.id === currentUser.id && u.role === "Admin") {
+            sessionAdminPin = u.pin;
+          }
+        }
         if (phepEl) u.basePhepOct = parseFloat(phepEl.value) || 0;
       });
 
       saveStateToLocal(true);
       closeModal('securityModal');
       refreshAllViews();
-      alert("✅ Đã cập nhật Password Dashboard & Mã PIN nhân viên lên Google Sheets thành công!");
+      showToast("✅ Đã cập nhật Password Dashboard & Mã PIN nhân viên lên Google Sheets thành công!", "info");
     }
 
     // ================= BẢNG THÔNG BÁO & NHẮC VIỆC HÔM NAY =================
@@ -1591,14 +2000,14 @@
         const li = document.createElement('li');
         li.className = 'nav-item' + (item.id === currentActiveTabId ? ' active' : '');
         li.setAttribute('data-tab', item.id);
-        li.innerText = item.label;
+        li.textContent = item.label;
         li.onclick = function() { switchTab(item.id, li); };
         ul.appendChild(li);
       });
     }
 
     function openMenuConfigModal() {
-      if (!currentUser || currentUser.role !== "Admin") return;
+      if (!isAdminSession()) return;
       renderMenuConfigList();
       openModal('menuConfigModal');
     }
@@ -1611,7 +2020,7 @@
           <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid var(--border); border-radius:6px; background:#f8fafc;">
             <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; cursor:pointer;">
               <input type="checkbox" ${item.visible !== false ? 'checked' : ''} onchange="toggleMenuVisible(${idx}, this.checked)">
-              <span>${item.label}</span>
+              <span>${escapeHtml(item.label)}</span>
             </label>
             <div style="display:flex; gap:4px;">
               <button type="button" class="btn btn-outline" style="padding:3px 7px;" onclick="moveMenuOrder(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>⬆️</button>
@@ -1623,7 +2032,7 @@
 
     function toggleMenuVisible(idx, isChecked) {
       if (navMenuItems.filter(x => x.visible !== false).length <= 1 && !isChecked) {
-        alert("Phải giữ lại ít nhất 1 danh mục hiển thị!");
+        showToast("Phải giữ lại ít nhất 1 danh mục hiển thị!", "warn");
         renderMenuConfigList();
         return;
       }
@@ -1644,52 +2053,107 @@
       renderSidebarNav();
     }
 
-    // ================= 1. MỞ KHÓA DASHBOARD (BẮT BUỘC XÁC THỰC & NHẬN USERS TỪ GOOGLE SHEETS) =================
+    // ================= 1. MỞ KHÓA DASHBOARD (CHỐNG BRUTE-FORCE & XÁC THỰC GOOGLE SHEETS) =================
+    function toggleGateUrlSetup() {
+      const box = document.getElementById('gateUrlSetupBox');
+      if (!box) return;
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        const inp = document.getElementById('gateCustomApiInput');
+        if (inp) inp.value = API_URL ? encodeEndpointToken(API_URL) : "";
+      }
+    }
+
+    function saveGateCustomApiUrl() {
+      const inp = document.getElementById('gateCustomApiInput');
+      const raw = (inp ? inp.value : "").trim();
+      const decoded = decodeEndpointToken(raw);
+      if (!decoded) {
+        showToast("Đường dẫn không hợp lệ! Phải bắt đầu bằng https://script.google.com/macros/s/... hoặc mã GS_ENC_V2:", "error");
+        return;
+      }
+      API_URL = decoded;
+      safeStorageSet(API_STORAGE_KEY, encodeEndpointToken(decoded));
+      document.getElementById('gateUrlSetupBox').classList.add('hidden');
+      showToast("✅ Đã lưu cấu hình kết nối Google Sheets (Đã mã hóa)!", "info");
+    }
+
     async function unlockDashboard() {
-      const val = (document.getElementById('gatePass').value || "").trim();
+      const nowMs = Date.now();
       const errEl = document.getElementById('gateErr');
+      if (nowMs < gateLockUntil) {
+        const waitSec = Math.ceil((gateLockUntil - nowMs) / 1000);
+        errEl.style.color = "var(--danger)";
+        errEl.innerText = `⛔ Tạm khóa đăng nhập do nhập sai nhiều lần. Vui lòng thử lại sau ${waitSec} giây!`;
+        return;
+      }
+
+      const val = (document.getElementById('gatePass').value || "").trim();
       if (!val) {
         errEl.style.color = "var(--danger)";
         errEl.innerText = "Vui lòng nhập mật khẩu hệ thống!";
         return;
       }
 
-      // Nếu quên chưa dán link /exec vào DEFAULT_API_URL trong code, cho phép nhập link ngay để không bị kẹt
       if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
-        const inputUrl = prompt("Chưa cấu hình đường dẫn Google Sheets (/exec) trong DEFAULT_API_URL.\nHãy dán đường link Web App (/exec) của bạn vào đây để kết nối:");
-        if (inputUrl && inputUrl.trim().startsWith("https://script.google.com")) {
-          API_URL = inputUrl.trim();
-          localStorage.setItem("IQC_GOLDSUN_API_URL", API_URL);
-        } else {
-          errEl.style.color = "var(--danger)";
-          errEl.innerText = "⚠️ Cần gắn link /exec của Google Sheets để xác thực mật khẩu và tải danh sách nhân sự!";
-          return;
-        }
+        document.getElementById('gateUrlSetupBox').classList.remove('hidden');
+        errEl.style.color = "var(--danger)";
+        errEl.innerText = "⚠️ Chưa có đường dẫn kết nối Sheet. Hãy dán link /exec vào ô bên dưới!";
+        return;
       }
 
       errEl.style.color = "var(--info)";
-      errEl.innerText = "⏳ Đang xác thực mật khẩu & tải danh sách nhân sự từ Google Sheets...";
+      errEl.innerText = "⏳ Đang xác thực mật khẩu bảo mật & tải dữ liệu từ Google Sheets...";
       sessionAuthPass = val;
       const result = await pullAllDataFromCloud(false);
 
       if (result === "UNAUTHORIZED") {
         sessionAuthPass = "";
-        errEl.style.color = "var(--danger)";
-        errEl.innerText = "❌ Mật khẩu không đúng! Vui lòng nhập lại.";
+        gateFailCount++;
+        if (gateFailCount >= MAX_AUTH_ATTEMPTS) {
+          gateLockUntil = Date.now() + LOCKOUT_DURATION_MS;
+          gateFailCount = 0;
+          try { sessionStorage.setItem("GS_IQC_GATE_LOCK", String(gateLockUntil)); } catch (e) {}
+          errEl.style.color = "var(--danger)";
+          errEl.innerText = "⛔ Nhập sai quá 5 lần! Đã khóa đăng nhập tạm thời trong 60 giây.";
+        } else {
+          errEl.style.color = "var(--danger)";
+          errEl.innerText = `❌ Mật khẩu không đúng! (Còn ${MAX_AUTH_ATTEMPTS - gateFailCount} lần thử)`;
+        }
         return;
       }
 
       if (!result || USERS.length === 0) {
         sessionAuthPass = "";
         errEl.style.color = "var(--danger)";
-        errEl.innerText = "⚠️ Chưa tải được danh sách nhân sự từ Sheet. Hãy kiểm tra lại quyền truy cập 'Bất kỳ ai (Anyone)' và 'Phiên bản mới' bên Apps Script!";
+        errEl.innerText = "⚠️ Chưa tải được danh sách nhân sự từ Sheet. Hãy kiểm tra quyền truy cập 'Anyone' bên Apps Script!";
         return;
       }
 
+      gateFailCount = 0;
+      gateLockUntil = 0;
+      try { sessionStorage.removeItem("GS_IQC_GATE_LOCK"); } catch (e) {}
+      document.getElementById('gatePass').value = "";
       errEl.innerText = "";
       document.getElementById('gateOverlay').classList.add('hidden');
+      remainingSeconds = 20 * 60;
       syncAllFiltersToRealTime();
       refreshAllViews();
+    }
+
+    function lockDashboardGate(reasonMsg = "") {
+      logoutPIN();
+      sessionAuthPass = "";
+      systemPass = "";
+      sessionAdminPin = "";
+      const passInp = document.getElementById('gatePass');
+      if (passInp) passInp.value = "";
+      const errEl = document.getElementById('gateErr');
+      if (errEl) {
+        errEl.style.color = "var(--warning)";
+        errEl.innerText = reasonMsg || "🔒 Màn hình đã được khóa bảo vệ. Vui lòng nhập mật khẩu để tiếp tục.";
+      }
+      document.getElementById('gateOverlay').classList.remove('hidden');
     }
 
     function refreshAllViews() {
@@ -1705,13 +2169,16 @@
       try { initTab6Filters(); renderTab6All(); } catch (e) {}
     }
 
-    // ================= 2. ĐỒNG HỒ ĐẾM NGƯỢC 20 PHÚT & CẬP NHẬT DỮ LIỆU =================
+    // ================= 2. ĐỒNG HỒ ĐẾM NGƯỢC 20 PHÚT & TỰ ĐỘNG KHÓA BẢO MẬT =================
     let remainingSeconds = 20 * 60;
     setInterval(() => {
-      remainingSeconds--;
-      if (remainingSeconds <= 0) forceSyncAndReset(true);
-      const m = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
-      const s = String(remainingSeconds % 60).padStart(2, '0');
+      const gateVisible = !document.getElementById('gateOverlay').classList.contains('hidden');
+      if (!gateVisible) {
+        remainingSeconds--;
+        if (remainingSeconds <= 0) forceSyncAndReset(true);
+      }
+      const m = String(Math.floor(Math.max(0, remainingSeconds) / 60)).padStart(2, '0');
+      const s = String(Math.max(0, remainingSeconds) % 60).padStart(2, '0');
       const el = document.getElementById('countdownText');
       if (el) el.innerText = `${m}:${s}`;
       updateBulletinClockLabel();
@@ -1720,22 +2187,27 @@
     async function manualSyncNow() {
       remainingSeconds = 20 * 60;
       if (API_URL && API_URL.startsWith("https://script.google.com")) {
-        await pullAllDataFromCloud(false);
+        await pullAllDataFromCloud(true);
       } else {
-        loadStateFromLocal();
+        await loadStateFromLocal();
         refreshAllViews();
+        showToast("Đã làm mới dữ liệu từ bộ nhớ mã hóa nội bộ!", "info");
       }
     }
 
     function forceSyncAndReset(isAuto = false) {
       remainingSeconds = 20 * 60;
-      logoutPIN();
-      if (API_URL && API_URL.startsWith("https://script.google.com")) {
-        pullAllDataFromCloud(false);
+      if (isAuto) {
+        lockDashboardGate("⏱ Đã hết 20 phút phiên làm việc! Hệ thống tự động đăng xuất PIN và khóa bảo vệ Dashboard.");
+        showToast("⏱ Đã hết 20 phút phiên làm việc! Hệ thống tự động khóa bảo vệ.", "warn");
       } else {
-        refreshAllViews();
+        logoutPIN();
+        if (API_URL && API_URL.startsWith("https://script.google.com")) {
+          pullAllDataFromCloud(false);
+        } else {
+          refreshAllViews();
+        }
       }
-      if (isAuto) alert("Đã hết 20 phút phiên làm việc! Hệ thống tự động đăng xuất PIN và làm mới dữ liệu.");
     }
 
     // ================= 3. TAB 1: KẾ THỪA PHÉP CÒN LẠI QUA CÁC THÁNG & CÁC NĂM =================
@@ -1797,7 +2269,7 @@
       const year = yearEl && yearEl.value ? parseInt(yearEl.value) : new Date().getFullYear();
       const daysInMonth = new Date(year, month, 0).getDate();
       const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-      const isAdmin = currentUser && currentUser.role === "Admin";
+      const isAdmin = isAdminSession();
 
       const btnAddStaff = document.getElementById('btnAddStaffAdmin');
       if (isAdmin) btnAddStaff.classList.remove('hidden');
@@ -1848,7 +2320,7 @@
           else if (val === "1/2P") tagClass = "tag-12P";
           else if (val === "KL") tagClass = "tag-KL";
 
-          daysHtml += `<td class="cell-day ${tagClass}" onclick="openLeaveCellPicker(${year}, ${month}, '${emp.id}', '${emp.name}', ${d})">${val}</td>`;
+          daysHtml += `<td class="cell-day ${tagClass}" onclick="openLeaveCellPickerByIdx(${year}, ${month}, ${empIdx}, ${d})">${escapeHtml(val)}</td>`;
         }
 
         const pRemain = pHienTai - usedP;
@@ -1857,10 +2329,10 @@
           : ``;
 
         bodyHtml += `<tr>
-          <td class="sticky-col-1">${emp.id}</td>
+          <td class="sticky-col-1">${escapeHtml(emp.id)}</td>
           <td class="sticky-col-2">
             <div class="emp-name-cell">
-              <span>${emp.name}</span>
+              <span>${escapeHtml(emp.name)}</span>
               ${delBtnHtml}
             </div>
           </td>
@@ -1883,9 +2355,15 @@
       document.getElementById('matrixFoot').innerHTML = footHtml;
     }
 
+    function openLeaveCellPickerByIdx(year, month, empIdx, day) {
+      const emp = USERS[empIdx];
+      if (!emp) return;
+      openLeaveCellPicker(year, month, emp.id, emp.name, day);
+    }
+
     function openLeaveCellPicker(year, month, empId, empName, day) {
       if (!currentUser) {
-        alert("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi sửa đổi đăng ký nghỉ!");
+        showToast("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi sửa đổi đăng ký nghỉ!", "warn");
         openPinModal();
         return;
       }
@@ -1897,7 +2375,9 @@
     function applyLeaveValue(val) {
       if (!activeLeaveCell) return;
       const { year, month, empId, day } = activeLeaveCell;
+      const allowed = ["", "44H", "NP", "1/2P", "KL"];
       const cleanVal = String(val).trim().toUpperCase();
+      if (!allowed.includes(cleanVal)) return;
       setLeaveRecordValue(year, month, empId, day, cleanVal);
       saveStateToLocal();
       closeModal('leaveCellModal');
@@ -1905,6 +2385,7 @@
     }
 
     function openAddStaffModal() {
+      if (!isAdminSession()) return;
       document.getElementById('stId').value = "";
       document.getElementById('stName').value = "";
       document.getElementById('stPhep').value = "";
@@ -1913,7 +2394,7 @@
     }
 
     function deleteStaff44h(empIdx) {
-      if (!currentUser || currentUser.role !== "Admin") return;
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         USERS.splice(empIdx, 1);
         saveStateToLocal(true);
@@ -1923,19 +2404,31 @@
     }
 
     function saveNewStaff() {
-      if (!currentUser || currentUser.role !== "Admin") return;
+      if (!isAdminSession()) return;
       let id = document.getElementById('stId').value.trim().toUpperCase();
       if (!id.startsWith("GS.")) id = "GS." + id;
       const name = document.getElementById('stName').value.trim().toUpperCase();
       const pTon = parseFloat(document.getElementById('stPhep').value) || 0;
       const roleVal = (document.getElementById('stRole').value === "Admin") ? "Admin" : "IQC";
-      if (!id || !name) { alert("Vui lòng nhập đầy đủ Mã NV và Họ tên!"); return; }
-      if (USERS.some(u => String(u.id).toUpperCase() === id || String(u.pin).toUpperCase() === id)) { alert("Mã nhân viên / PIN này đã tồn tại trong hệ thống!"); return; }
-      USERS.push({ pin: id, id: id, name: name, role: roleVal, basePhepOct: pTon, canAssign: (roleVal === "Admin") });
+      if (!id || !name) { showToast("Vui lòng nhập đầy đủ Mã NV và Họ tên!", "error"); return; }
+      if (USERS.some(u => String(u.id).toUpperCase() === id || String(u.pin).toUpperCase() === id)) {
+        showToast("Mã nhân viên / PIN này đã tồn tại trong hệ thống!", "error");
+        return;
+      }
+      USERS.push({
+        pin: id,
+        pinHash: computeClientPinHash(id, id),
+        id: id,
+        name: name,
+        role: roleVal,
+        basePhepOct: pTon,
+        canAssign: (roleVal === "Admin")
+      });
       saveStateToLocal(true);
       closeModal('staffModal');
       renderMatrix44h();
       try { renderTab6All(); } catch (e) {}
+      showToast(`Đã thêm nhân sự ${name} (${id}) thành công!`, "info");
     }
 
     // ================= 4. HÀM KIỂM TRA THÁNG / NĂM & HẠN SỬ DỤNG =================
@@ -1970,8 +2463,8 @@
       const curCD = selCD.value || "ALL";
       const nccs = [...new Set(lotData.map(x => x.ncc).filter(Boolean))];
       const cds = [...new Set(lotData.map(x => x.cd).filter(Boolean))];
-      selNCC.innerHTML = `<option value="ALL">Tất cả NCC</option>` + nccs.map(n => `<option value="${n}">${n}</option>`).join('');
-      selCD.innerHTML = `<option value="ALL">Tất cả CĐ</option>` + cds.map(c => `<option value="${c}">${c}</option>`).join('');
+      selNCC.innerHTML = `<option value="ALL">Tất cả NCC</option>` + nccs.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+      selCD.innerHTML = `<option value="ALL">Tất cả CĐ</option>` + cds.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
       selNCC.value = nccs.includes(curNCC) ? curNCC : "ALL";
       selCD.value = cds.includes(curCD) ? curCD : "ALL";
     }
@@ -1988,18 +2481,19 @@
       const filtered = getFilteredLotData();
       const tbody = document.getElementById('bodyTab2');
       tbody.innerHTML = '';
+      const isAdmin = isAdminSession();
       filtered.forEach((r, i) => {
         const origIdx = lotData.indexOf(r);
         const rate = r.slKiem > 0 ? ((r.slNG / r.slKiem) * 100).toFixed(2) + "%" : "0.00%";
         tbody.innerHTML += `<tr>
-          <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${r.code}</td>
-          <td>${r.tenNVL}</td><td>${r.ncc}</td><td>${r.cd}</td>
+          <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${escapeHtml(r.code)}</td>
+          <td>${escapeHtml(r.tenNVL)}</td><td>${escapeHtml(r.ncc)}</td><td>${escapeHtml(r.cd)}</td>
           <td>${Number(r.slKiem).toLocaleString()}</td><td style="color:var(--danger);font-weight:bold">${Number(r.slNG).toLocaleString()}</td>
-          <td style="color:var(--danger);font-weight:bold">${rate}</td><td>${r.loi}</td>
-          <td>${r.bienPhap}</td><td><b>${r.nguoiXN}</b></td>
+          <td style="color:var(--danger);font-weight:bold">${rate}</td><td>${escapeHtml(r.loi)}</td>
+          <td>${escapeHtml(r.bienPhap)}</td><td><b>${escapeHtml(r.nguoiXN)}</b></td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditLotModal(${origIdx}))">✏ Sửa</button>
-            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteLotRow(${origIdx})">🗑️</button>` : ""}
+            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteLotRow(${origIdx})">🗑️</button>` : ""}
           </td>
         </tr>`;
       });
@@ -2072,6 +2566,7 @@
 
     function openEditLotModal(idx) {
       const r = lotData[idx];
+      if (!r) return;
       document.getElementById('lotModalTitle').innerText = "Chỉnh Sửa Lot Phát Sinh: " + r.code;
       document.getElementById('lotEditIdx').value = idx;
       document.getElementById('fLotNgay').value = r.ngay;
@@ -2088,8 +2583,9 @@
     }
 
     function saveLotForm() {
+      if (!currentUser) return;
       const code = document.getElementById('fLotCode').value.trim();
-      if (!code) { alert("Vui lòng nhập Mã Code!"); return; }
+      if (!code) { showToast("Vui lòng nhập Mã Code!", "error"); return; }
       const idx = parseInt(document.getElementById('lotEditIdx').value);
       const ngayVal = document.getElementById('fLotNgay').value || getTodayISO();
       const item = {
@@ -2117,6 +2613,7 @@
     }
 
     function deleteLotRow(idx) {
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         lotData.splice(idx, 1);
         saveStateToLocal();
@@ -2131,7 +2628,7 @@
       const selNCC = document.getElementById('filterNCCTab3');
       const curNCC = selNCC.value || "ALL";
       const nccs = [...new Set(ngPendingData.map(x => x.ncc).filter(Boolean))];
-      selNCC.innerHTML = `<option value="ALL">Tất cả NCC</option>` + nccs.map(n => `<option value="${n}">${n}</option>`).join('');
+      selNCC.innerHTML = `<option value="ALL">Tất cả NCC</option>` + nccs.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       selNCC.value = nccs.includes(curNCC) ? curNCC : "ALL";
     }
 
@@ -2143,24 +2640,43 @@
       return ngPendingData.filter(r => matchMonthAndYear(r.ngay, fMonth, fYear) && (fNCC === "ALL" || r.ncc === fNCC) && (fSt === "ALL" || r.hienTrang === fSt));
     }
 
+    function openSafeImagePreview(src) {
+      const cleanSrc = sanitizeImageSrc(src);
+      if (!cleanSrc) {
+        showToast("Định dạng ảnh không hợp lệ hoặc đã bị chặn vì lý do bảo mật!", "error");
+        return;
+      }
+      const imgEl = document.getElementById('lightboxPreviewImg');
+      if (imgEl) imgEl.src = cleanSrc;
+      openModal('imagePreviewModal');
+    }
+
     function renderTab3() {
       const filtered = getFilteredNGData();
       const tbody = document.getElementById('bodyTab3');
       tbody.innerHTML = '';
+      const isAdmin = isAdminSession();
       filtered.forEach((r, i) => {
         const origIdx = ngPendingData.indexOf(r);
+        const safeImg = sanitizeImageSrc(r.img);
         tbody.innerHTML += `<tr>
-          <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${r.maHang}</td>
-          <td>${r.loaiHang}</td><td>${r.ncc}</td><td style="color:var(--danger);font-weight:bold">${Number(r.slNG).toLocaleString()}</td>
-          <td>${r.loi}</td><td><b>${r.hienTrang}</b></td><td>${r.nguoiXN}</td><td>${r.ghiChu}</td>
-          <td>${r.img ? `<img src="${r.img}" class="thumb-img" onclick="window.open('${r.img}')">` : '—'}</td>
+          <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${escapeHtml(r.maHang)}</td>
+          <td>${escapeHtml(r.loaiHang)}</td><td>${escapeHtml(r.ncc)}</td><td style="color:var(--danger);font-weight:bold">${Number(r.slNG).toLocaleString()}</td>
+          <td>${escapeHtml(r.loi)}</td><td><b>${escapeHtml(r.hienTrang)}</b></td><td>${escapeHtml(r.nguoiXN)}</td><td>${escapeHtml(r.ghiChu)}</td>
+          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewNGRowImage(${origIdx})" alt="Ảnh NG">` : '—'}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditNGModal(${origIdx}))">✏ Sửa</button>
-            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteNGRow(${origIdx})">🗑️</button>` : ""}
+            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteNGRow(${origIdx})">🗑️</button>` : ""}
           </td>
         </tr>`;
       });
       updateChartsTab3(filtered);
+    }
+
+    function previewNGRowImage(idx) {
+      if (ngPendingData[idx] && ngPendingData[idx].img) {
+        openSafeImagePreview(ngPendingData[idx].img);
+      }
     }
 
     function updateChartsTab3(filtered = getFilteredNGData()) {
@@ -2222,6 +2738,7 @@
 
     function openEditNGModal(idx) {
       const r = ngPendingData[idx];
+      if (!r) return;
       document.getElementById('ngModalTitle').innerText = "Cập Nhật Hàng NG: " + r.maHang;
       document.getElementById('ngEditIdx').value = idx;
       document.getElementById('fNgNgay').value = r.ngay;
@@ -2237,8 +2754,9 @@
     }
 
     function saveNGForm() {
+      if (!currentUser) return;
       const maHang = document.getElementById('fNgMaHang').value.trim();
-      if (!maHang) { alert("Vui lòng nhập Mã Hàng!"); return; }
+      if (!maHang) { showToast("Vui lòng nhập Mã Hàng!", "error"); return; }
       const idx = parseInt(document.getElementById('ngEditIdx').value);
       const ngayVal = document.getElementById('fNgNgay').value || getTodayISO();
       const item = {
@@ -2251,7 +2769,7 @@
         loi: document.getElementById('fNgLoi').value.trim(),
         ghiChu: document.getElementById('fNgGhiChu').value.trim(),
         nguoiXN: currentUser.name,
-        img: tempBase64
+        img: sanitizeImageSrc(tempBase64)
       };
       if (idx === -1) ngPendingData.unshift(item); else ngPendingData[idx] = item;
 
@@ -2266,6 +2784,7 @@
     }
 
     function deleteNGRow(idx) {
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         ngPendingData.splice(idx, 1);
         saveStateToLocal();
@@ -2308,7 +2827,7 @@
       const sel = document.getElementById('filterNCCTab4');
       const cur = sel.value || "ALL";
       const nccs = [...new Set(claimData.map(x => x.ncc).filter(Boolean))];
-      sel.innerHTML = `<option value="ALL">Tất cả Nhà Gia Công / NCC</option>` + nccs.map(n => `<option value="${n}">${n}</option>`).join('');
+      sel.innerHTML = `<option value="ALL">Tất cả Nhà Gia Công / NCC</option>` + nccs.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
       sel.value = nccs.includes(cur) ? cur : "ALL";
     }
 
@@ -2321,6 +2840,7 @@
       const tbody = document.getElementById('bodyTab4');
       tbody.innerHTML = '';
       let sumTienLoc = 0, sumTienHang = 0, sumTongChiPhi = 0;
+      const isAdmin = isAdminSession();
 
       filtered.forEach((r, i) => {
         const origIdx = claimData.indexOf(r);
@@ -2337,17 +2857,17 @@
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td>
           <td>${formatDateVN(r.ngay)}</td>
-          <td><b>${r.ncc}</b></td>
-          <td>${r.ncr}</td>
-          <td style="font-weight:bold; color:var(--primary)">${r.code}</td>
+          <td><b>${escapeHtml(r.ncc)}</b></td>
+          <td>${escapeHtml(r.ncr)}</td>
+          <td style="font-weight:bold; color:var(--primary)">${escapeHtml(r.code)}</td>
           <td>${Number(r.slVao).toLocaleString()}</td>
           <td>${Number(slOK).toLocaleString()}</td>
           <td style="color:var(--danger); font-weight:bold;">${Number(r.slNG).toLocaleString()}</td>
           <td style="color:var(--danger); font-weight:bold;">${pctNG}</td>
-          <td>${r.loi}</td>
-          <td>${r.soNguoi}</td>
-          <td>${r.tStart || '—'}</td>
-          <td>${r.tEnd || '—'}</td>
+          <td>${escapeHtml(r.loi)}</td>
+          <td>${Number(r.soNguoi) || 1}</td>
+          <td>${escapeHtml(r.tStart || '—')}</td>
+          <td>${escapeHtml(r.tEnd || '—')}</td>
           <td style="font-weight:bold;">${Number(r.tongGio).toFixed(2)}</td>
           <td>${Number(r.giaLoc).toLocaleString()}</td>
           <td style="font-weight:bold;">${tienLoc.toLocaleString()}</td>
@@ -2355,7 +2875,7 @@
           <td style="font-weight:800; color:var(--danger);">${tongCP.toLocaleString()}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditClaimModal(${origIdx}))">✏ Sửa</button>
-            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteClaimRow(${origIdx})">🗑️</button>` : ""}
+            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteClaimRow(${origIdx})">🗑️</button>` : ""}
           </td>
         </tr>`;
       });
@@ -2416,6 +2936,7 @@
 
     function openEditClaimModal(idx) {
       const r = claimData[idx];
+      if (!r) return;
       document.getElementById('claimModalTitle').innerText = "Sửa Phiếu Claim Fee: " + r.ncr;
       document.getElementById('claimEditIdx').value = idx;
       document.getElementById('fClNgay').value = r.ngay;
@@ -2436,6 +2957,7 @@
     }
 
     function saveClaimForm() {
+      if (!currentUser) return;
       normalizeTime24hOnBlur(document.getElementById('fClStart'));
       normalizeTime24hOnBlur(document.getElementById('fClEnd'));
       calcClaimPreview();
@@ -2443,7 +2965,7 @@
       const code = document.getElementById('fClCode').value.trim();
       const ncc = document.getElementById('fClNCC').value.trim().toUpperCase();
       const ngayVal = document.getElementById('fClNgay').value || getTodayISO();
-      if (!code || !ncc) { alert("Vui lòng nhập Nhà Cung Cấp và Mã Sản Phẩm!"); return; }
+      if (!code || !ncc) { showToast("Vui lòng nhập Nhà Cung Cấp và Mã Sản Phẩm!", "error"); return; }
 
       const idx = parseInt(document.getElementById('claimEditIdx').value);
       const ncrVal = document.getElementById('fClNCR').value.trim() || generateAutoNCRForDate(ngayVal);
@@ -2482,6 +3004,7 @@
     }
 
     function deleteClaimRow(idx) {
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         claimData.splice(idx, 1);
         saveStateToLocal();
@@ -2500,11 +3023,18 @@
       if (subId === 'subTab5_3') renderTab5DailyMatrix();
     }
 
+    function previewSampleRowImage(idx) {
+      if (sampleList[idx] && sampleList[idx].img) {
+        openSafeImagePreview(sampleList[idx].img);
+      }
+    }
+
     function renderTab5Sample() {
       const fLoai = document.getElementById('filterLoaiHangSample').value;
       const fSt = document.getElementById('filterStatusSample').value;
       const tbody = document.getElementById('bodyTab5Sample');
       tbody.innerHTML = '';
+      const isAdmin = isAdminSession();
 
       const filtered = sampleList.filter(r => {
         const stObj = evaluateExpiryStatus(r.han);
@@ -2524,28 +3054,29 @@
         if (soHetHan > 0) msg += `${soHetHan} mẫu đã HẾT HẠN `;
         if (soSapHet > 0) msg += `${soSapHet} mẫu SẮP HẾT HẠN (≤15 ngày) `;
         msg += "— Nhân viên vui lòng chuẩn bị lấy mẫu mới / gia hạn ngay!";
-        tbody.innerHTML += `<tr><td colspan="13" style="padding:10px 14px; background:${bg}; color:${col}; font-weight:700; text-align:left;">${msg}</td></tr>`;
+        tbody.innerHTML += `<tr><td colspan="13" style="padding:10px 14px; background:${bg}; color:${col}; font-weight:700; text-align:left;">${escapeHtml(msg)}</td></tr>`;
       }
 
       filtered.forEach((r, i) => {
         const origIdx = sampleList.indexOf(r);
         const stObj = evaluateExpiryStatus(r.han);
+        const safeImg = sanitizeImageSrc(r.img);
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td style="font-weight:bold; color:var(--primary);">${r.code}</td>
-          <td><span class="cat-pill">${r.loaiHang}</span></td>
-          <td><b>${r.ten}</b></td>
-          <td>${r.ncc}</td>
-          <td>${r.viTri}</td>
-          <td style="font-weight:bold; color:#0f172a;">${r.nguoiKy || '—'}</td>
+          <td style="font-weight:bold; color:var(--primary);">${escapeHtml(r.code)}</td>
+          <td><span class="cat-pill">${escapeHtml(r.loaiHang)}</span></td>
+          <td><b>${escapeHtml(r.ten)}</b></td>
+          <td>${escapeHtml(r.ncc)}</td>
+          <td>${escapeHtml(r.viTri)}</td>
+          <td style="font-weight:bold; color:#0f172a;">${escapeHtml(r.nguoiKy || '—')}</td>
           <td>${formatDateVN(r.ngayKy)}</td>
           <td>${formatDateVN(r.han)}</td>
           <td><span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span></td>
-          <td>${r.nguoiLuu}</td>
-          <td>${r.img ? `<img src="${r.img}" class="thumb-img" onclick="window.open('${r.img}')">` : '—'}</td>
+          <td>${escapeHtml(r.nguoiLuu)}</td>
+          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewSampleRowImage(${origIdx})" alt="Ảnh mẫu">` : '—'}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditSampleModal(${origIdx}))">✏ Sửa</button>
-            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteSampleRow(${origIdx})">🗑️</button>` : ""}
+            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteSampleRow(${origIdx})">🗑️</button>` : ""}
           </td>
         </tr>`;
       });
@@ -2569,6 +3100,7 @@
 
     function openEditSampleModal(idx) {
       const r = sampleList[idx];
+      if (!r) return;
       document.getElementById('sampleModalTitle').innerText = "Sửa Bản Mẫu: " + r.code;
       document.getElementById('sampleEditIdx').value = idx;
       document.getElementById('fSpCode').value = r.code;
@@ -2584,8 +3116,9 @@
     }
 
     function saveSampleForm() {
+      if (!currentUser) return;
       const code = document.getElementById('fSpCode').value.trim();
-      if (!code) { alert("Vui lòng nhập Mã Hàng / Code!"); return; }
+      if (!code) { showToast("Vui lòng nhập Mã Hàng / Code!", "error"); return; }
       const idx = parseInt(document.getElementById('sampleEditIdx').value);
       const item = {
         code,
@@ -2597,7 +3130,7 @@
         ngayKy: document.getElementById('fSpNgayKy').value || getTodayISO(),
         han: document.getElementById('fSpHan').value,
         nguoiLuu: currentUser.name,
-        img: tempBase64
+        img: sanitizeImageSrc(tempBase64)
       };
       if (idx === -1) sampleList.unshift(item); else sampleList[idx] = item;
       saveStateToLocal();
@@ -2605,6 +3138,7 @@
     }
 
     function deleteSampleRow(idx) {
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         sampleList.splice(idx, 1);
         saveStateToLocal();
@@ -2613,25 +3147,33 @@
     }
 
     // --- TAB CON 5.2: DANH MỤC HIỆU CHUẨN THIẾT BỊ ---
+    function previewEquipRowImage(idx) {
+      if (equipList[idx] && equipList[idx].img) {
+        openSafeImagePreview(equipList[idx].img);
+      }
+    }
+
     function renderTab5Equip() {
       const tbody = document.getElementById('bodyTab5Equip');
       tbody.innerHTML = '';
+      const isAdmin = isAdminSession();
       equipList.forEach((r, i) => {
         const stObj = evaluateExpiryStatus(r.hanHC);
+        const safeImg = sanitizeImageSrc(r.img);
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td style="font-weight:bold; color:var(--primary);">${r.ma}</td>
-          <td><b>${r.ten}</b></td>
-          <td>${r.serial}</td>
-          <td>${r.viTri}</td>
+          <td style="font-weight:bold; color:var(--primary);">${escapeHtml(r.ma)}</td>
+          <td><b>${escapeHtml(r.ten)}</b></td>
+          <td>${escapeHtml(r.serial)}</td>
+          <td>${escapeHtml(r.viTri)}</td>
           <td>${formatDateVN(r.ngayHC)}</td>
           <td>${formatDateVN(r.hanHC)}</td>
           <td><span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span></td>
-          <td>${r.nguoiPT}</td>
-          <td>${r.img ? `<img src="${r.img}" class="thumb-img" onclick="window.open('${r.img}')">` : '—'}</td>
+          <td>${escapeHtml(r.nguoiPT)}</td>
+          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewEquipRowImage(${i})" alt="Ảnh tem">` : '—'}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditEquipModal(${i}))">✏ Sửa</button>
-            ${(currentUser && currentUser.role === "Admin") ? `<button type="button" class="btn-icon-del" onclick="deleteEquipRow(${i})">🗑️</button>` : ""}
+            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteEquipRow(${i})">🗑️</button>` : ""}
           </td>
         </tr>`;
       });
@@ -2654,6 +3196,7 @@
 
     function openEditEquipModal(idx) {
       const r = equipList[idx];
+      if (!r) return;
       document.getElementById('equipModalTitle').innerText = "Sửa Thiết Bị: " + r.ma;
       document.getElementById('equipEditIdx').value = idx;
       document.getElementById('fEqMa').value = r.ma;
@@ -2667,9 +3210,10 @@
     }
 
     function saveEquipForm() {
+      if (!currentUser) return;
       const ma = document.getElementById('fEqMa').value.trim().toUpperCase();
       const ten = document.getElementById('fEqTen').value.trim();
-      if (!ma || !ten) { alert("Vui lòng nhập Mã Thiết Bị và Tên Thiết Bị!"); return; }
+      if (!ma || !ten) { showToast("Vui lòng nhập Mã Thiết Bị và Tên Thiết Bị!", "error"); return; }
       const idx = parseInt(document.getElementById('equipEditIdx').value);
       const item = {
         ma, ten,
@@ -2678,7 +3222,7 @@
         ngayHC: document.getElementById('fEqNgayHC').value || getTodayISO(),
         hanHC: document.getElementById('fEqHanHC').value,
         nguoiPT: currentUser ? currentUser.name : "",
-        img: tempBase64
+        img: sanitizeImageSrc(tempBase64)
       };
       if (idx === -1) equipList.push(item); else equipList[idx] = item;
       saveStateToLocal();
@@ -2687,6 +3231,7 @@
     }
 
     function deleteEquipRow(idx) {
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         equipList.splice(idx, 1);
         saveStateToLocal();
@@ -2732,7 +3277,7 @@
       document.getElementById('headTab5DailyMatrix').innerHTML = hRow1 + hRow2;
 
       let bodyHtml = '';
-      equipList.forEach(eq => {
+      equipList.forEach((eq, eqIdx) => {
         if (!equipDailyMatrixData[matrixKey][eq.ma]) {
           equipDailyMatrixData[matrixKey][eq.ma] = { checker: eq.nguoiPT || "", days: {} };
         }
@@ -2746,15 +3291,15 @@
           else if (val === "NG") tagClass = "tag-NG";
           else if (val === "BT") tagClass = "tag-BT";
 
-          daysHtml += `<td class="cell-day ${tagClass}" onclick="openEquipDailyCellPicker('${matrixKey}', '${eq.ma}', '${eq.ten}', ${d}, ${month}, ${year})">${val}</td>`;
+          daysHtml += `<td class="cell-day ${tagClass}" onclick="openEquipDailyCellPickerByIdx(${eqIdx}, ${d}, ${month}, ${year})">${escapeHtml(val)}</td>`;
         }
 
         bodyHtml += `<tr>
-          <td class="sticky-col-1" style="color:var(--primary);">${eq.ma}</td>
-          <td class="sticky-col-2">${eq.ten}</td>
-          <td>${eq.viTri}</td>
-          <td><span class="cat-pill">${shift}</span></td>
-          <td><b>${rec.checker}</b></td>
+          <td class="sticky-col-1" style="color:var(--primary);">${escapeHtml(eq.ma)}</td>
+          <td class="sticky-col-2">${escapeHtml(eq.ten)}</td>
+          <td>${escapeHtml(eq.viTri)}</td>
+          <td><span class="cat-pill">${escapeHtml(shift)}</span></td>
+          <td><b>${escapeHtml(rec.checker)}</b></td>
           ${daysHtml}
         </tr>`;
       });
@@ -2762,9 +3307,17 @@
       document.getElementById('bodyTab5DailyMatrix').innerHTML = bodyHtml;
     }
 
+    function openEquipDailyCellPickerByIdx(eqIdx, day, month, year) {
+      const eq = equipList[eqIdx];
+      if (!eq) return;
+      const shift = document.getElementById('shiftSelectEquipDaily').value;
+      const matrixKey = getEquipDailyMatrixKey(year, month, shift);
+      openEquipDailyCellPicker(matrixKey, eq.ma, eq.ten, day, month, year);
+    }
+
     function openEquipDailyCellPicker(matrixKey, eqMa, eqTen, day, month, year) {
       if (!currentUser) {
-        alert("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi chấm kiểm tra thiết bị!");
+        showToast("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi chấm kiểm tra thiết bị!", "warn");
         openPinModal();
         return;
       }
@@ -2774,7 +3327,9 @@
     }
 
     function applyEquipDailyValue(val) {
-      if (!activeEquipDailyCell) return;
+      if (!activeEquipDailyCell || !currentUser) return;
+      const allowed = ["", "OK", "NG", "BT"];
+      if (!allowed.includes(val)) return;
       const { matrixKey, eqMa, day } = activeEquipDailyCell;
       if (!equipDailyMatrixData[matrixKey][eqMa]) {
         equipDailyMatrixData[matrixKey][eqMa] = { checker: currentUser.name, days: {} };
@@ -2789,6 +3344,7 @@
     }
 
     function markTodayAllEquipOK() {
+      if (!currentUser) return;
       const now = new Date();
       const month = parseInt(document.getElementById('monthSelectEquipDaily').value) || (now.getMonth() + 1);
       const yearEl = document.getElementById('yearSelectEquipDaily');
@@ -2806,22 +3362,29 @@
       });
       saveStateToLocal();
       renderTab5DailyMatrix();
+      showToast("✅ Đã chấm OK toàn bộ thiết bị cho ngày hôm nay!", "info");
     }
 
-    // ================= 9. HỖ TRỢ DÁN ẢNH CTRL+V =================
+    // ================= 9. HỖ TRỢ DÁN ẢNH CTRL+V AN TOÀN =================
     function setPreviewImage(imgTagId, base64Str) {
-      tempBase64 = base64Str;
+      const cleanImg = sanitizeImageSrc(base64Str);
+      tempBase64 = cleanImg;
       const el = document.getElementById(imgTagId);
       if (!el) return;
-      if (base64Str) { el.src = base64Str; el.style.display = 'inline-block'; }
+      if (cleanImg) { el.src = cleanImg; el.style.display = 'inline-block'; }
       else { el.src = ''; el.style.display = 'none'; }
     }
 
     function previewPasteImage(input, previewId) {
       if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (!file.type.startsWith("image/")) {
+          showToast("Chỉ cho phép đính kèm tệp hình ảnh hợp lệ!", "error");
+          return;
+        }
         const reader = new FileReader();
         reader.onload = e => setPreviewImage(previewId, e.target.result);
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
       }
     }
 
@@ -2847,14 +3410,14 @@
 
     // ================= 10. XUẤT EXCEL & XUẤT ẢNH =================
     function exportTableToExcel(tableId, fileNamePrefix) {
-      if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, vui lòng thử lại!"); return; }
+      if (typeof XLSX === 'undefined') { showToast("Thư viện Excel đang tải, vui lòng thử lại!", "warn"); return; }
       const tableEl = document.getElementById(tableId);
       const wb = XLSX.utils.table_to_book(tableEl, { sheet: "BaoCao_BoPhan_IQC" });
       XLSX.writeFile(wb, `${fileNamePrefix}_${formatDateVN(getTodayISO()).replace(/\//g,'-')}.xlsx`);
     }
 
     function exportSectionToImage(elementId, fileNamePrefix) {
-      if (typeof html2canvas === 'undefined') { alert("Thư viện chụp ảnh đang tải, vui lòng thử lại!"); return; }
+      if (typeof html2canvas === 'undefined') { showToast("Thư viện chụp ảnh đang tải, vui lòng thử lại!", "warn"); return; }
       const target = document.getElementById(elementId);
 
       html2canvas(target, {
@@ -2890,7 +3453,7 @@
       });
     }
 
-    // ================= 11. CHUYỂN TAB & ĐĂNG NHẬP PIN =================
+    // ================= 11. CHUYỂN TAB & ĐĂNG NHẬP PIN (XÁC THỰC SHA-256 & CHỐNG BRUTE-FORCE) =================
     function switchTab(tabId, el) {
       currentActiveTabId = tabId;
       document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
@@ -2910,7 +3473,7 @@
     }
 
     function updateAdminUIControls() {
-      const isAdmin = currentUser && currentUser.role === "Admin";
+      const isAdmin = isAdminSession();
       const adminToolbar = document.getElementById('adminBackupToolbar');
       const adminSidebar = document.getElementById('adminSidebarTools');
       if (adminToolbar) {
@@ -2924,39 +3487,81 @@
     }
 
     function openPinModal() {
-      document.getElementById('pinInput').value = '';
+      const pinInp = document.getElementById('pinInput');
+      pinInp.type = "password";
+      pinInp.value = '';
       document.getElementById('pinError').innerText = '';
       openModal('pinModal');
-      document.getElementById('pinInput').focus();
+      pinInp.focus();
     }
 
     function submitPinLogin() {
+      const nowMs = Date.now();
+      const errEl = document.getElementById('pinError');
+      if (nowMs < pinLockUntil) {
+        const waitSec = Math.ceil((pinLockUntil - nowMs) / 1000);
+        errEl.innerText = `⛔ Đã khóa nhập PIN do sai quá 5 lần. Thử lại sau ${waitSec} giây!`;
+        return;
+      }
+
       let rawInput = document.getElementById('pinInput').value.trim().toUpperCase();
+      if (!rawInput) {
+        errEl.innerText = "Vui lòng nhập mã PIN hoặc mã ID!";
+        return;
+      }
+
       const found = USERS.find(u => {
         const uPin = String(u.pin || "").trim().toUpperCase();
+        const uHash = String(u.pinHash || "").trim().toLowerCase();
         const uId = String(u.id || "").trim().toUpperCase();
         const shortId = uId.replace("GS.", "");
+        const candidateHash = computeClientPinHash(uId, rawInput);
         if (u.role === "Admin") {
-          return rawInput === uPin;
+          if (uHash && candidateHash === uHash) return true;
+          return Boolean(uPin && rawInput === uPin);
         }
-        return rawInput === uPin || rawInput === uId || rawInput === shortId;
+        if (uHash && candidateHash === uHash) return true;
+        return (uPin && rawInput === uPin) || rawInput === uId || rawInput === shortId;
       });
 
       if (found) {
-        currentUser = found;
+        pinFailCount = 0;
+        pinLockUntil = 0;
+        try { sessionStorage.removeItem("GS_IQC_PIN_LOCK"); } catch (e) {}
+        currentUser = Object.assign({}, found);
+        if (found.role === "Admin") {
+          sessionAdminPin = rawInput;
+          pullAllDataFromCloud(false);
+        } else {
+          sessionAdminPin = "";
+        }
         document.getElementById('loggedUserName').innerText = `${found.name} (${found.id} - ${found.role})`;
         document.getElementById('userBadge').classList.remove('hidden');
         document.getElementById('btnOpenPin').classList.add('hidden');
+        document.getElementById('pinInput').value = '';
         updateAdminUIControls();
         closeModal('pinModal');
         refreshAllViews();
+        showToast(`Xin chào ${found.name} (${found.role})!`, "info");
       } else {
-        document.getElementById('pinError').innerText = "Mã PIN hoặc ID nhân viên không chính xác!";
+        pinFailCount++;
+        if (pinFailCount >= MAX_AUTH_ATTEMPTS) {
+          pinLockUntil = Date.now() + LOCKOUT_DURATION_MS;
+          pinFailCount = 0;
+          try { sessionStorage.setItem("GS_IQC_PIN_LOCK", String(pinLockUntil)); } catch (e) {}
+          errEl.innerText = "⛔ Nhập sai PIN quá 5 lần! Đã khóa tạm thời trong 60 giây.";
+        } else {
+          errEl.innerText = `Mã PIN hoặc ID không chính xác! (Còn ${MAX_AUTH_ATTEMPTS - pinFailCount} lần thử)`;
+        }
       }
     }
 
     function logoutPIN() {
       currentUser = null;
+      sessionAdminPin = "";
+      USERS.forEach(u => {
+        if (u.pinHash) u.pin = "";
+      });
       document.getElementById('userBadge').classList.add('hidden');
       document.getElementById('btnOpenPin').classList.remove('hidden');
       updateAdminUIControls();
@@ -2965,7 +3570,7 @@
 
     function requireAuth(fn) {
       if (!currentUser) {
-        alert("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi thực hiện!");
+        showToast("Vui lòng bấm 'Đăng Nhập PIN (ID)' trước khi thực hiện!", "warn");
         openPinModal();
         return;
       }
@@ -3009,7 +3614,7 @@
       if (!assigneeSel) return;
       const curVal = assigneeSel.value || "ALL";
       assigneeSel.innerHTML = `<option value="ALL">Tất cả nhân sự nhận việc</option>` +
-        USERS.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+        USERS.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)} (${escapeHtml(u.id)})</option>`).join('');
       assigneeSel.value = curVal;
     }
 
@@ -3031,7 +3636,7 @@
     function renderTab6All() {
       const btnAdd = document.getElementById('btnOpenAddTask');
       if (btnAdd) {
-        if (currentUser && (currentUser.role === "Admin" || currentUser.canAssign)) btnAdd.classList.remove('hidden');
+        if (currentUser && (isAdminSession() || currentUser.canAssign)) btnAdd.classList.remove('hidden');
         else btnAdd.classList.add('hidden');
       }
       renderTab6TasksTable();
@@ -3043,7 +3648,7 @@
       const fYear = document.getElementById('filterYearTab6') ? document.getElementById('filterYearTab6').value : "ALL";
       const fAssignee = document.getElementById('filterAssigneeTab6').value;
       const fStatus = document.getElementById('filterStatusTab6').value;
-      const isAdmin = currentUser && currentUser.role === "Admin";
+      const isAdmin = isAdminSession();
       const filtered = taskList.filter(tk => {
         const stInfo = getTaskStatusInfo(tk);
         return matchMonthAndYear(tk.ngayGiao, fMonth, fYear) && (fAssignee === "ALL" || tk.nguoiNhanId === fAssignee) && (fStatus === "ALL" || stInfo.label === fStatus);
@@ -3067,10 +3672,10 @@
             : `<button type="button" class="check-done-btn" onclick="toggleCompleteTask(${origIdx})">☐ Tích Hoàn Thành</button>`;
         } else {
           checkCellHtml = tk.isDone
-            ? `<span style="color:#15803d; font-weight:700;">✔ ${assigneeName} đã tích</span>`
-            : `<span class="check-locked" title="Chỉ ${assigneeName} mới được tích!">🔒 Chỉ ${assigneeName} được tích</span>`;
+            ? `<span style="color:#15803d; font-weight:700;">✔ ${escapeHtml(assigneeName)} đã tích</span>`
+            : `<span class="check-locked" title="Chỉ ${escapeHtml(assigneeName)} mới được tích!">🔒 Chỉ ${escapeHtml(assigneeName)} được tích</span>`;
         }
-        const canEdit = currentUser && (currentUser.role === "Admin" || currentUser.id === tk.nguoiGiaoId);
+        const canEdit = currentUser && (isAdmin || currentUser.id === tk.nguoiGiaoId);
         let actionHtml = '';
         if (canEdit) actionHtml += `<button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="openEditTaskModal(${origIdx})">✏ Sửa</button> `;
         if (isAdmin) actionHtml += `<button type="button" class="btn-icon-del" onclick="deleteTaskRow(${origIdx})">🗑️</button>`;
@@ -3080,16 +3685,16 @@
         else if (tk.mucDo === "Quan trọng") prioColor = "#d97706";
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td style="font-weight:bold; color:var(--primary);">${tk.code || '—'}</td>
+          <td style="font-weight:bold; color:var(--primary);">${escapeHtml(tk.code || '—')}</td>
           <td>${formatDateVN(tk.ngayGiao)}</td>
           <td style="font-weight:bold;">${formatDateVN(tk.hanChot)}</td>
           <td style="text-align:left; white-space:normal;">
-            <div style="font-weight:700; color:#0f172a;">${tk.noiDung}</div>
-            ${tk.ghiChu ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Ghi chú: ${tk.ghiChu}</div>` : ''}
+            <div style="font-weight:700; color:#0f172a;">${escapeHtml(tk.noiDung)}</div>
+            ${tk.ghiChu ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Ghi chú: ${escapeHtml(tk.ghiChu)}</div>` : ''}
           </td>
-          <td><b style="color:${prioColor};">${tk.mucDo}</b></td>
-          <td><b>${assignerName}</b><br><span style="font-size:10px;color:#64748b;">(${tk.nguoiGiaoId})</span></td>
-          <td style="background:#f8fafc;"><b>${assigneeName}</b><br><span style="font-size:10px;color:var(--primary);">(${tk.nguoiNhanId})</span></td>
+          <td><b style="color:${prioColor};">${escapeHtml(tk.mucDo)}</b></td>
+          <td><b>${escapeHtml(assignerName)}</b><br><span style="font-size:10px;color:#64748b;">(${escapeHtml(tk.nguoiGiaoId)})</span></td>
+          <td style="background:#f8fafc;"><b>${escapeHtml(assigneeName)}</b><br><span style="font-size:10px;color:var(--primary);">(${escapeHtml(tk.nguoiNhanId)})</span></td>
           <td>${checkCellHtml}</td>
           <td><b>${formatDateVN(tk.ngayXong)}</b></td>
           <td><span class="status-badge ${stInfo.cls}">${stInfo.label}</span></td>
@@ -3101,8 +3706,9 @@
 
     function toggleCompleteTask(idx) {
       const tk = taskList[idx];
+      if (!tk) return;
       if (!currentUser || currentUser.id !== tk.nguoiNhanId) {
-        alert(`Chỉ người được giao việc (${getUserNameById(tk.nguoiNhanId)}) mới được phép tích hoàn thành công việc này!`);
+        showToast(`Chỉ người được giao việc (${getUserNameById(tk.nguoiNhanId)}) mới được phép tích hoàn thành công việc này!`, "error");
         return;
       }
       tk.isDone = !tk.isDone;
@@ -3114,7 +3720,7 @@
     function renderTab6KPITable() {
       const fMonth = document.getElementById('filterMonthTab6').value;
       const fYear = document.getElementById('filterYearTab6') ? document.getElementById('filterYearTab6').value : "ALL";
-      const isAdmin = currentUser && currentUser.role === "Admin";
+      const isAdmin = isAdminSession();
       const tbody = document.getElementById('bodyTab6KPI');
       tbody.innerHTML = '';
       USERS.forEach((emp, idx) => {
@@ -3153,8 +3759,8 @@
         }
         tbody.innerHTML += `<tr>
           <td>${idx + 1}</td>
-          <td style="font-weight:bold; color:var(--primary);">${emp.id}</td>
-          <td style="text-align:left; font-weight:700;">${emp.name}</td>
+          <td style="font-weight:bold; color:var(--primary);">${escapeHtml(emp.id)}</td>
+          <td style="text-align:left; font-weight:700;">${escapeHtml(emp.name)}</td>
           <td class="kpi-role-col">${roleToggleHtml}</td>
           <td style="font-weight:800; font-size:13px;">${total} việc</td>
           <td style="color:#15803d; font-weight:bold;">${onTime}</td>
@@ -3177,7 +3783,7 @@
     }
 
     function toggleAssignPermission(empIdx) {
-      if (!currentUser || currentUser.role !== "Admin") { alert("Chỉ Admin mới được thay đổi quyền Người giao việc!"); return; }
+      if (!isAdminSession()) { showToast("Chỉ Admin mới được thay đổi quyền Người giao việc!", "error"); return; }
       USERS[empIdx].canAssign = !USERS[empIdx].canAssign;
       saveStateToLocal(true);
       try { initTab6Filters(); } catch (e) {}
@@ -3187,14 +3793,17 @@
     function populateTaskModalDropdowns() {
       const assigners = USERS.filter(u => u.role === "Admin" || u.canAssign);
       const selAssigner = document.getElementById('fTkAssigner');
-      selAssigner.innerHTML = assigners.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
-      if (currentUser && (currentUser.role === "Admin" || currentUser.canAssign)) selAssigner.value = currentUser.id;
+      selAssigner.innerHTML = assigners.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)} (${escapeHtml(u.id)})</option>`).join('');
+      if (currentUser && (isAdminSession() || currentUser.canAssign)) selAssigner.value = currentUser.id;
       const selAssignee = document.getElementById('fTkAssignee');
-      selAssignee.innerHTML = USERS.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+      selAssignee.innerHTML = USERS.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)} (${escapeHtml(u.id)})</option>`).join('');
     }
 
     function openAddTaskModal() {
-      if (!currentUser || (!currentUser.canAssign && currentUser.role !== "Admin")) { alert("Tài khoản của bạn không có quyền Giao việc!"); return; }
+      if (!currentUser || (!currentUser.canAssign && !isAdminSession())) {
+        showToast("Tài khoản của bạn không có quyền Giao việc!", "error");
+        return;
+      }
       const today = getTodayISO();
       TODAY_STR = today;
       populateTaskModalDropdowns();
@@ -3212,6 +3821,7 @@
     function openEditTaskModal(idx) {
       populateTaskModalDropdowns();
       const tk = taskList[idx];
+      if (!tk) return;
       document.getElementById('taskModalTitle').innerText = "Chỉnh Sửa Công Việc: " + (tk.code || "");
       document.getElementById('taskEditIdx').value = idx;
       document.getElementById('fTkAssigner').value = tk.nguoiGiaoId;
@@ -3226,9 +3836,10 @@
     }
 
     function saveTaskForm() {
+      if (!currentUser) return;
       const noiDung = document.getElementById('fTkTitle').value.trim();
       const hanChot = document.getElementById('fTkDueDate').value;
-      if (!noiDung || !hanChot) { alert("Vui lòng nhập đầy đủ Nội dung công việc và Hạn hoàn thành!"); return; }
+      if (!noiDung || !hanChot) { showToast("Vui lòng nhập đầy đủ Nội dung công việc và Hạn hoàn thành!", "error"); return; }
       const idx = parseInt(document.getElementById('taskEditIdx').value);
       const ngayGiao = document.getElementById('fTkStartDate').value || getTodayISO();
       const codeVal = document.getElementById('fTkCode').value.trim() || generateAutoCodeForDate(ngayGiao);
@@ -3257,6 +3868,7 @@
     }
 
     function deleteTaskRow(idx) {
+      if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         taskList.splice(idx, 1);
         saveStateToLocal();
@@ -3266,15 +3878,14 @@
 
     // ================= 13. SAO LƯU (.JSON) / PHỤC HỒI & CẤU HÌNH GOOGLE SHEETS (CHỈ ADMIN) =================
     function exportFullBackupJSON() {
-      if (!currentUser || currentUser.role !== "Admin") {
-        alert("Chỉ Admin mới có quyền sao lưu dữ liệu hệ thống!");
+      if (!isAdminSession()) {
+        showToast("Chỉ Admin mới có quyền sao lưu dữ liệu hệ thống!", "error");
         return;
       }
       const backupObj = {
         system: "GOLDSUN_IQC_QCS",
         backupDate: new Date().toISOString(),
         exportedBy: currentUser.name,
-        systemPass: systemPass || sessionAuthPass,
         navMenuItems,
         USERS,
         monthlyLeaveRecords,
@@ -3293,11 +3904,13 @@
       a.download = `Backup_IQC_Goldsun_${formatDateVN(getTodayISO()).replace(/\//g, '-')}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      showToast("📥 Đã xuất file Sao lưu (.json) an toàn (đã lược bỏ mật khẩu hệ thống).", "info");
     }
 
+    let pendingRestoreData = null;
     function importFullBackupJSON(inputEl) {
-      if (!currentUser || currentUser.role !== "Admin") {
-        alert("Chỉ Admin mới có quyền phục hồi dữ liệu!");
+      if (!isAdminSession()) {
+        showToast("Chỉ Admin mới có quyền phục hồi dữ liệu!", "error");
         return;
       }
       const file = inputEl.files && inputEl.files[0];
@@ -3305,45 +3918,96 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
-          const data = JSON.parse(e.target.result);
+          const rawParsed = JSON.parse(e.target.result);
+          const data = sanitizeImportedObject(rawParsed);
           if (!data || !Array.isArray(data.USERS)) {
-            alert("File Backup không đúng định dạng của hệ thống GOLDSUN IQC!");
+            showToast("File Backup không đúng định dạng của hệ thống GOLDSUN IQC!", "error");
             return;
           }
-          if (confirm(`Xác nhận khôi phục toàn bộ dữ liệu từ bản sao lưu ngày [${data.backupDate || ''}]?`)) {
-            applyDataObjectToMemory(data);
-            saveStateToLocal(true);
-            refreshAllViews();
-            alert("Đã khôi phục toàn bộ dữ liệu hệ thống thành công!");
-          }
+          pendingRestoreData = data;
+          const lbl = document.getElementById('confirmRestoreText');
+          if (lbl) lbl.innerText = `Xác nhận khôi phục toàn bộ dữ liệu từ bản sao lưu ngày [${data.backupDate || 'Không rõ'}]?`;
+          openModal('confirmRestoreModal');
         } catch (err) {
-          alert("Lỗi đọc file Backup: " + err.message);
+          showToast("Lỗi đọc file Backup: " + err.message, "error");
         }
         inputEl.value = "";
       };
       reader.readAsText(file);
     }
 
+    function executeRestoreConfirm() {
+      closeModal('confirmRestoreModal');
+      if (pendingRestoreData && isAdminSession()) {
+        applyDataObjectToMemory(pendingRestoreData);
+        pendingRestoreData = null;
+        saveStateToLocal(true);
+        refreshAllViews();
+        showToast("✅ Đã khôi phục toàn bộ dữ liệu hệ thống thành công!", "info");
+      }
+    }
+
+    function cancelRestoreConfirm() {
+      pendingRestoreData = null;
+      closeModal('confirmRestoreModal');
+    }
+
     function openSheetConfigModal() {
-      if (!currentUser || currentUser.role !== "Admin") return;
-      document.getElementById('cfgApiUrlInput').value = API_URL || "";
+      if (!isAdminSession()) return;
+      const inp = document.getElementById('cfgApiUrlInput');
+      inp.type = "password";
+      inp.value = API_URL || "";
+      document.getElementById('githubTokenResultBox').classList.add('hidden');
       document.getElementById('statusTextConnect').innerHTML = API_URL
-        ? "<span style='color:#15803d;'>Đã lưu đường dẫn Web App</span>"
-        : "<span style='color:#d97706;'>Chưa thiết lập (Đang chạy chế độ Lưu nội bộ trên máy)</span>";
+        ? "<span style='color:#15803d;'>🔒 Đã lưu & mã hóa đường dẫn Web App</span>"
+        : "<span style='color:#d97706;'>Chưa thiết lập (Đang chạy chế độ Lưu mã hóa trên máy)</span>";
       openModal('sheetConfigModal');
     }
 
+    function generateEncodedTokenForGithub() {
+      if (!isAdminSession()) return;
+      const raw = document.getElementById('cfgApiUrlInput').value.trim();
+      const cleanUrl = decodeEndpointToken(raw);
+      if (!cleanUrl) {
+        showToast("Hãy nhập đường dẫn https://script.google.com/macros/s/.../exec hợp lệ trước!", "error");
+        return;
+      }
+      const token = encodeEndpointToken(cleanUrl);
+      const outInp = document.getElementById('githubTokenOutput');
+      if (outInp) outInp.value = token;
+      document.getElementById('githubTokenResultBox').classList.remove('hidden');
+    }
+
+    function copyGithubEncodedToken() {
+      const outInp = document.getElementById('githubTokenOutput');
+      if (!outInp || !outInp.value) return;
+      outInp.select();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(outInp.value);
+        } else {
+          document.execCommand('copy');
+        }
+        showToast("📋 Đã copy Mã bảo mật URL! Bạn có thể dán vào DEFAULT_API_TOKEN khi đưa lên GitHub.", "info");
+      } catch (e) {
+        document.execCommand('copy');
+        showToast("📋 Đã copy Mã bảo mật URL!", "info");
+      }
+    }
+
     async function testSheetConnection() {
-      const url = document.getElementById('cfgApiUrlInput').value.trim();
+      if (!isAdminSession()) return;
+      const raw = document.getElementById('cfgApiUrlInput').value.trim();
+      const url = decodeEndpointToken(raw);
       const statusEl = document.getElementById('statusTextConnect');
       if (!url || !url.startsWith("https://script.google.com/macros/s/")) {
-        statusEl.innerHTML = "<span style='color:#dc2626;'>❌ Link phải bắt đầu bằng https://script.google.com/macros/s/...</span>";
+        statusEl.innerHTML = "<span style='color:#dc2626;'>❌ Link phải bắt đầu bằng https://script.google.com/macros/s/... hoặc mã GS_ENC_V2</span>";
         return;
       }
       statusEl.innerHTML = "<span style='color:#2563eb;'>⏳ Đang kiểm tra kết nối & tải dữ liệu từ Google Sheets...</span>";
       try {
         API_URL = url;
-        localStorage.setItem("IQC_GOLDSUN_API_URL", url);
+        safeStorageSet(API_STORAGE_KEY, encodeEndpointToken(url));
         const ok = await pullAllDataFromCloud(false);
         if (ok === "UNAUTHORIZED") {
           statusEl.innerHTML = "<span style='color:#dc2626;'>❌ Mật khẩu hiện tại không khớp với ô H2 trên Sheet NHAN_SU_PIN!</span>";
@@ -3353,52 +4017,66 @@
           ? "<span style='color:#15803d;'>✅ Kết nối thành công & Đã đồng bộ dữ liệu từ Sheet về máy!</span>"
           : "<span style='color:#15803d;'>✅ Đường dẫn hợp lệ! (Hãy bấm 'Đẩy dữ liệu lên Sheet')</span>";
       } catch (err) {
-        statusEl.innerHTML = `<span style='color:#dc2626;'>❌ Không thể kết nối (${err.message})</span>`;
+        statusEl.innerHTML = `<span style='color:#dc2626;'>❌ Không thể kết nối (${escapeHtml(err.message)})</span>`;
       }
     }
 
     function saveSheetConfig() {
-      const url = document.getElementById('cfgApiUrlInput').value.trim();
+      if (!isAdminSession()) return;
+      const raw = document.getElementById('cfgApiUrlInput').value.trim();
+      const url = decodeEndpointToken(raw);
       API_URL = url;
       if (url) {
-        localStorage.setItem("IQC_GOLDSUN_API_URL", url);
+        safeStorageSet(API_STORAGE_KEY, encodeEndpointToken(url));
         pullAllDataFromCloud(false);
       } else {
-        localStorage.removeItem("IQC_GOLDSUN_API_URL");
+        safeStorageRemove(API_STORAGE_KEY);
         updateSyncStatusBadge("local");
       }
-      alert(url ? "Đã lưu đường dẫn Google Sheets thành công!" : "Đã chuyển về chế độ lưu trữ độc lập trên máy!");
+      showToast(url ? "✅ Đã mã hóa & lưu đường dẫn Google Sheets thành công!" : "Đã chuyển về chế độ lưu trữ mã hóa độc lập trên máy!", "info");
       closeModal('sheetConfigModal');
     }
 
     async function pushAllDataToCloud(showAlert = false, syncUsersFlag = false) {
-      const url = (document.getElementById('cfgApiUrlInput') ? document.getElementById('cfgApiUrlInput').value.trim() : "") || API_URL;
+      const cfgEl = document.getElementById('cfgApiUrlInput');
+      const customRaw = cfgEl && !document.getElementById('sheetConfigModal').classList.contains('hidden') ? cfgEl.value.trim() : "";
+      const url = decodeEndpointToken(customRaw) || API_URL;
       if (!url) {
-        if (showAlert) alert("Vui lòng nhập đường dẫn Web App URL trước!");
+        if (showAlert) showToast("Vui lòng nhập đường dẫn Web App URL trước!", "error");
+        return;
+      }
+      const authPassToUse = sessionAuthPass || systemPass;
+      if (!authPassToUse) {
+        updateSyncStatusBadge("error", "🔒 Chưa xác thực");
         return;
       }
       updateSyncStatusBadge("syncing", "⏳ Đang lưu lên Sheet...");
       try {
-        const rawObj = JSON.parse(localStorage.getItem(STORAGE_KEY_ALL) || "{}");
-        rawObj.syncUsersFromWeb = syncUsersFlag;
-        rawObj.authPass = sessionAuthPass || systemPass;
-        rawObj.systemPass = systemPass || sessionAuthPass;
+        const allowUserSync = Boolean(syncUsersFlag && isAdminSession());
+        const rawObj = buildCleanMemoryPayload(allowUserSync);
+        rawObj.authPass = authPassToUse;
+        if (allowUserSync) {
+          rawObj.systemPass = systemPass || sessionAuthPass;
+          rawObj.adminPin = sessionAdminPin;
+        }
         await fetch(url, {
           method: "POST",
           mode: "no-cors",
+          credentials: "omit",
+          referrerPolicy: "no-referrer",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(rawObj)
         });
-        if (syncUsersFlag && systemPass) sessionAuthPass = systemPass;
+        if (allowUserSync && systemPass) sessionAuthPass = systemPass;
         updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
-        if (showAlert) alert("☁️ Đã đẩy toàn bộ dữ liệu 6 hạng mục lên Google Sheets thành công!");
+        if (showAlert) showToast("☁️ Đã đẩy toàn bộ dữ liệu 6 hạng mục lên Google Sheets thành công!", "info");
       } catch (err) {
         updateSyncStatusBadge("error", "⚠️ Lỗi gửi Sheet");
-        if (showAlert) alert("Lỗi khi đẩy dữ liệu: " + err.message);
+        if (showAlert) showToast("Lỗi khi đẩy dữ liệu: " + err.message, "error");
       }
     }
 
-    // ===== NÚT HIỂN THỊ / ẨN MẬT KHẨU (CON MẮT) =====
+    // ===== NÚT HIỂN THỊ /ẨN MẬT KHẨU (CON MẮT) =====
     function togglePinVisibility(inputId, btnEl) {
       const inp = document.getElementById(inputId);
       if (!inp) return;
@@ -3410,12 +4088,16 @@
     // ===== MODAL XÁC NHẬN XÓA DỮ LIỆU =====
     let pendingDeleteCallback = null;
     function askDeleteConfirm(callback) {
+      if (!isAdminSession()) {
+        showToast("Chỉ Quản trị viên (Admin) mới có quyền xóa dữ liệu!", "error");
+        return;
+      }
       pendingDeleteCallback = callback;
       openModal('confirmDeleteModal');
     }
     function executeDeleteConfirm() {
       closeModal('confirmDeleteModal');
-      if (typeof pendingDeleteCallback === "function") {
+      if (typeof pendingDeleteCallback === "function" && isAdminSession()) {
         const cb = pendingDeleteCallback; pendingDeleteCallback = null; cb();
       }
     }
@@ -3423,14 +4105,52 @@
       pendingDeleteCallback = null;
       closeModal('confirmDeleteModal');
     }
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+    }
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
 
-    // BẢO MẬT: Không tự động tải dữ liệu trước khi người dùng nhập đúng Password ở màn hình khóa
+    Object.assign(window, {
+      getTodayISO, formatDateVN, autoFormatTime24h, normalizeTime24hOnBlur, parse24hToDecimal,
+      updateSyncStatusBadge, populateDynamicYearDropdowns, syncAllFiltersToRealTime,
+      openSecurityModal, saveSecurityConfig, updateBulletinClockLabel, renderDailyBulletin,
+      jumpToSection, renderSidebarNav, openMenuConfigModal, renderMenuConfigList,
+      toggleMenuVisible, moveMenuOrder, toggleGateUrlSetup, saveGateCustomApiUrl,
+      unlockDashboard, lockDashboardGate, refreshAllViews, manualSyncNow, forceSyncAndReset,
+      renderMatrix44h, openLeaveCellPickerByIdx, openLeaveCellPicker, applyLeaveValue,
+      openAddStaffModal, deleteStaff44h, saveNewStaff, matchMonthAndYear, evaluateExpiryStatus,
+      populateFiltersTab2, getFilteredLotData, renderTab2, updateChartsTab2, calcLotRatio,
+      openAddLotModal, openEditLotModal, saveLotForm, deleteLotRow, populateFiltersTab3,
+      getFilteredNGData, openSafeImagePreview, previewNGRowImage, renderTab3, updateChartsTab3,
+      openAddNGModal, openEditNGModal, saveNGForm, deleteNGRow, generateAutoNCRForDate,
+      previewAutoNCRByDate, populateFiltersTab4, renderTab4, calcClaimPreview, calcClaimTotalOnly,
+      openAddClaimModal, openEditClaimModal, saveClaimForm, deleteClaimRow, switchSubTab5,
+      previewSampleRowImage, renderTab5Sample, openAddSampleModal, openEditSampleModal,
+      saveSampleForm, deleteSampleRow, previewEquipRowImage, renderTab5Equip, openAddEquipModal,
+      openEditEquipModal, saveEquipForm, deleteEquipRow, getEquipDailyMatrixKey,
+      renderTab5DailyMatrix, openEquipDailyCellPickerByIdx, openEquipDailyCellPicker,
+      applyEquipDailyValue, markTodayAllEquipOK, setPreviewImage, previewPasteImage,
+      exportTableToExcel, exportSectionToImage, switchTab, updateAdminUIControls,
+      openPinModal, submitPinLogin, logoutPIN, requireAuth, generateAutoCodeForDate,
+      previewAutoTaskCodeByDate, initTab6Filters, getTaskStatusInfo, getUserNameById,
+      renderTab6All, renderTab6TasksTable, toggleCompleteTask, renderTab6KPITable,
+      toggleAssignPermission, populateTaskModalDropdowns, openAddTaskModal, openEditTaskModal,
+      saveTaskForm, deleteTaskRow, exportFullBackupJSON, importFullBackupJSON,
+      executeRestoreConfirm, cancelRestoreConfirm, openSheetConfigModal,
+      generateEncodedTokenForGithub, copyGithubEncodedToken, testSheetConnection,
+      saveSheetConfig, pushAllDataToCloud, togglePinVisibility, askDeleteConfirm,
+      executeDeleteConfirm, cancelDeleteConfirm, openModal, closeModal
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
       syncAllFiltersToRealTime();
       renderSidebarNav();
     });
+  })();
   </script>
 </body>
 </html>
