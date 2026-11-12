@@ -246,17 +246,8 @@
         <input type="password" id="gatePass" name="password" autocomplete="current-password" placeholder="Nhập Password hệ thống..." style="padding-right:44px;">
         <button type="button" onclick="togglePinVisibility('gatePass', this)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; color:#64748b; padding:2px;" title="Hiển thị / Ẩn mật khẩu">👁️</button>
       </div>
-      <button type="submit" id="btnGateSubmit" class="btn btn-green" style="width: 100%; justify-content: center; padding: 10px;">ĐĂNG NHẬP DASHBOARD</button>
+      <button type="submit" class="btn btn-green" style="width: 100%; justify-content: center; padding: 10px;">ĐĂNG NHẬP DASHBOARD</button>
       <div id="gateErr" style="color: var(--danger); font-size: 12px; margin-top: 8px;"></div>
-      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted);">
-        <span>🛡️ Bảo mật AES-256 & SHA-256</span>
-        <button type="button" onclick="toggleGateUrlSetup()" style="background:none; border:none; color:var(--primary-med); font-weight:700; cursor:pointer; font-size:11px;">⚙️ Kết nối Sheet</button>
-      </div>
-      <div id="gateUrlSetupBox" class="hidden" style="margin-top: 8px; text-align: left; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
-        <label style="font-size: 11px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">Link Google Apps Script (/exec) hoặc Mã hóa:</label>
-        <input type="text" id="gateCustomApiInput" placeholder="Dán link https://script.google.com/.../exec" style="margin: 0 0 6px 0; font-size: 11px; padding: 6px 8px; text-align: left;">
-        <button type="button" class="btn btn-blue" style="width: 100%; justify-content: center; padding: 6px;" onclick="saveGateCustomApiUrl()">Lưu Kết Nối Sheet</button>
-      </div>
     </form>
   </div>
 
@@ -309,6 +300,7 @@
         <span class="sec-shield-pill" title="Dữ liệu lưu cục bộ được mã hóa AES-GCM 256-bit, PIN băm SHA-256, chống XSS & ẩn biến Console">🛡️ Đã bật Bảo Mật GitHub</span>
         <div id="userBadge" class="user-pill hidden">
           <span>👤 <span id="loggedUserName">User_Name</span></span>
+          <button type="button" class="btn btn-outline" style="border:none; color:var(--info); padding:2px 5px; font-weight:700;" onclick="openChangeMyPinModal()" title="Đổi mật khẩu / mã PIN cá nhân">[🔑 Đổi Pass]</button>
           <button type="button" class="btn btn-outline" style="border:none; color:var(--danger); padding:2px 5px;" onclick="logoutPIN()">[Thoát]</button>
         </div>
         <button type="button" id="btnOpenPin" class="btn btn-green" onclick="openPinModal()">🔑 Đăng Nhập PIN (ID)</button>
@@ -1181,6 +1173,52 @@
         <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="closeModal('pinModal')">Hủy</button>
         <button type="button" class="btn btn-green" style="flex:1; justify-content:center;" onclick="submitPinLogin()">Đăng Nhập</button>
       </div>
+      <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border);">
+        <button type="button" class="btn btn-outline" style="width:100%; justify-content:center; color:var(--primary); border-color:var(--primary-med); font-size:12px;" onclick="closeModal('pinModal'); openChangeMyPinModal();">🔄 Đổi Mật Khẩu / Mã PIN Cá Nhân</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NHÂN VIÊN TỰ ĐỔI MẬT KHẨU / MÃ PIN CÁ NHÂN -->
+  <div id="changeMyPinModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 430px;">
+      <div class="modal-header">
+        <h3 style="color: var(--primary);">🔑 ĐỔI MẬT KHẨU / MÃ PIN CÁ NHÂN</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('changeMyPinModal')">✕</button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.45;">
+        Mỗi nhân sự có thể tự đặt mật khẩu hoặc mã PIN riêng (tối thiểu 4 ký tự). Sau khi đổi, người khác sẽ không thể dùng Mã ID công khai của bạn để đăng nhập nữa.
+      </div>
+      <div class="form-group">
+        <label>Chọn Nhân Sự (*):</label>
+        <select id="selfPinEmpSelect" class="form-control" style="font-weight:bold; color:var(--primary);"></select>
+      </div>
+      <div class="form-group">
+        <label>Mật Khẩu / Mã PIN Hiện Tại (*):</label>
+        <div style="position:relative;">
+          <input type="password" id="selfOldPinInput" class="form-control" placeholder="Nhập PIN/Pass hiện tại (hoặc Mã ID nếu chưa đổi)..." style="padding-right:40px;">
+          <button type="button" onclick="togglePinVisibility('selfOldPinInput', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px;">👁️</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Mật Khẩu / Mã PIN Mới (* - Tối thiểu 4 ký tự):</label>
+        <div style="position:relative;">
+          <input type="password" id="selfNewPinInput" class="form-control" placeholder="Nhập mật khẩu / mã PIN mới..." style="padding-right:40px;">
+          <button type="button" onclick="togglePinVisibility('selfNewPinInput', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px;">👁️</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Nhập Lại Mật Khẩu / Mã PIN Mới (*):</label>
+        <div style="position:relative;">
+          <input type="password" id="selfConfirmPinInput" class="form-control" placeholder="Nhập lại mật khẩu / mã PIN mới..." style="padding-right:40px;" onkeydown="if(event.key==='Enter') submitChangeMyPin()">
+          <button type="button" onclick="togglePinVisibility('selfConfirmPinInput', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px;">👁️</button>
+        </div>
+      </div>
+      <div id="selfPinError" style="color: var(--danger); font-size: 12px; margin-bottom: 10px;"></div>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-outline" style="flex:1; justify-content:center;" onclick="closeModal('changeMyPinModal')">Hủy</button>
+        <button type="button" class="btn btn-green" style="flex:1; justify-content:center;" onclick="submitChangeMyPin()">💾 Lưu Mật Khẩu Mới</button>
+      </div>
     </div>
   </div>
 
@@ -1307,6 +1345,25 @@
     let activeEquipDailyCell = null;
     let currentActiveTabId = "tab1";
     const PIN_HASH_SALT = "GOLDSUN_PIN_SALT_2026";
+    const PIN_MASK_KEY = "GOLDSUN_IQC_PIN_MASK_2026";
+
+    function decodePinFromTransport(encStr) {
+      if (!encStr) return "";
+      const s = String(encStr).trim();
+      if (!s.startsWith("GS_PIN_V2:")) return s;
+      try {
+        const b64 = s.slice("GS_PIN_V2:".length);
+        const bin = atob(b64);
+        const keyBytes = new TextEncoder().encode(PIN_MASK_KEY);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) {
+          out[i] = bin.charCodeAt(i) ^ keyBytes[i % keyBytes.length];
+        }
+        return new TextDecoder().decode(out).trim();
+      } catch (e) {
+        return "";
+      }
+    }
 
     // Hàm băm SHA-256 đồng bộ khớp 100% với computePinHash() bên trong Code.gs
     function sha256HexSync(asciiStr) {
@@ -1696,6 +1753,9 @@
       if (!data || typeof data !== 'object') return false;
       if (data.systemPass && String(data.systemPass).trim() !== "") {
         systemPass = String(data.systemPass).trim();
+      } else if (data.systemPassEnc) {
+        const decPass = decodePinFromTransport(data.systemPassEnc);
+        if (decPass) systemPass = decPass;
       }
       if (Array.isArray(data.navMenuItems) && data.navMenuItems.length > 0) {
         const validIds = ["tab1", "tab2", "tab3", "tab4", "tab5", "tab6"];
@@ -1703,15 +1763,19 @@
         if (filteredNav.length > 0) navMenuItems = filteredNav;
       }
       if (Array.isArray(data.USERS) && data.USERS.length > 0) {
-        USERS = data.USERS.map(u => ({
-          pin: String(u.pin || "").trim(),
-          pinHash: String(u.pinHash || "").trim().toLowerCase(),
-          id: String(u.id || "").trim(),
-          name: String(u.name || "").trim(),
-          role: u.role === "Admin" ? "Admin" : "IQC",
-          basePhepOct: parseFloat(u.basePhepOct) || 0,
-          canAssign: Boolean(u.canAssign || u.role === "Admin")
-        }));
+        USERS = data.USERS.map(u => {
+          const rawPin = String(u.pin || "").trim() || decodePinFromTransport(u.pinEnc) || String(u.id || "").trim();
+          const uid = String(u.id || "").trim();
+          return {
+            pin: rawPin,
+            pinHash: String(u.pinHash || "").trim().toLowerCase() || computeClientPinHash(uid, rawPin),
+            id: uid,
+            name: String(u.name || "").trim(),
+            role: u.role === "Admin" ? "Admin" : "IQC",
+            basePhepOct: parseFloat(u.basePhepOct) || 0,
+            canAssign: Boolean(u.canAssign || u.role === "Admin")
+          };
+        });
       }
       if (data.monthlyLeaveRecords && typeof data.monthlyLeaveRecords === 'object') monthlyLeaveRecords = data.monthlyLeaveRecords;
       if (Array.isArray(data.lotData)) lotData = data.lotData;
@@ -1755,7 +1819,7 @@
       }
     }
 
-    function saveStateToLocal(syncUsersFlag = false) {
+    function saveStateToLocal(syncUsersFlag = false, authPassOverride = "", adminPinOverride = "") {
       try {
         TODAY_STR = getTodayISO();
         const allowUserSync = Boolean(syncUsersFlag && isAdminSession());
@@ -1763,7 +1827,7 @@
         persistEncryptedVaultToLocal(payload);
         renderDailyBulletin();
         if (API_URL && API_URL.startsWith("https://script.google.com")) {
-          pushAllDataToCloud(false, allowUserSync);
+          pushAllDataToCloud(false, allowUserSync, authPassOverride, adminPinOverride);
         } else {
           updateSyncStatusBadge("local");
         }
@@ -1887,8 +1951,11 @@
         showToast("Mật khẩu mở khóa Dashboard phải có ít nhất 4 ký tự!", "error");
         return;
       }
+      // Giữ lại mật khẩu cũ & PIN Admin cũ để xác thực với Sheet trước khi ghi đè mật khẩu/PIN mới
+      const prevAuthPass = sessionAuthPass || systemPass || newSysPass;
+      const prevAdminPin = sessionAdminPin || (currentUser ? currentUser.pin : "");
+
       systemPass = newSysPass;
-      sessionAuthPass = newSysPass;
 
       USERS.forEach((u, i) => {
         const nameEl = document.getElementById(`secName_${i}`);
@@ -1900,14 +1967,18 @@
         if (pinEl && pinEl.value.trim()) {
           u.pin = pinEl.value.trim();
           u.pinHash = computeClientPinHash(u.id, u.pin);
-          if (currentUser && u.id === currentUser.id && u.role === "Admin") {
-            sessionAdminPin = u.pin;
+          if (currentUser && u.id === currentUser.id) {
+            currentUser.pin = u.pin;
+            if (u.role === "Admin") sessionAdminPin = u.pin;
           }
         }
         if (phepEl) u.basePhepOct = parseFloat(phepEl.value) || 0;
       });
 
-      saveStateToLocal(true);
+      // Gửi prevAuthPass (mật khẩu đang nằm ở ô H2 trên Sheet) làm authPass để vượt qua bước kiểm tra của doPost,
+      // và gửi systemPass (newSysPass) + USERS mới để ghi đè vào NHAN_SU_PIN và ô H2!
+      saveStateToLocal(true, prevAuthPass, prevAdminPin);
+      sessionAuthPass = newSysPass;
       closeModal('securityModal');
       refreshAllViews();
       showToast("✅ Đã cập nhật Password Dashboard & Mã PIN nhân viên lên Google Sheets thành công!", "info");
@@ -2054,30 +2125,6 @@
     }
 
     // ================= 1. MỞ KHÓA DASHBOARD (CHỐNG BRUTE-FORCE & XÁC THỰC GOOGLE SHEETS) =================
-    function toggleGateUrlSetup() {
-      const box = document.getElementById('gateUrlSetupBox');
-      if (!box) return;
-      box.classList.toggle('hidden');
-      if (!box.classList.contains('hidden')) {
-        const inp = document.getElementById('gateCustomApiInput');
-        if (inp) inp.value = API_URL ? encodeEndpointToken(API_URL) : "";
-      }
-    }
-
-    function saveGateCustomApiUrl() {
-      const inp = document.getElementById('gateCustomApiInput');
-      const raw = (inp ? inp.value : "").trim();
-      const decoded = decodeEndpointToken(raw);
-      if (!decoded) {
-        showToast("Đường dẫn không hợp lệ! Phải bắt đầu bằng https://script.google.com/macros/s/... hoặc mã GS_ENC_V2:", "error");
-        return;
-      }
-      API_URL = decoded;
-      safeStorageSet(API_STORAGE_KEY, encodeEndpointToken(decoded));
-      document.getElementById('gateUrlSetupBox').classList.add('hidden');
-      showToast("✅ Đã lưu cấu hình kết nối Google Sheets (Đã mã hóa)!", "info");
-    }
-
     async function unlockDashboard() {
       const nowMs = Date.now();
       const errEl = document.getElementById('gateErr');
@@ -2096,10 +2143,7 @@
       }
 
       if (!API_URL || !API_URL.startsWith("https://script.google.com")) {
-        document.getElementById('gateUrlSetupBox').classList.remove('hidden');
-        errEl.style.color = "var(--danger)";
-        errEl.innerText = "⚠️ Chưa có đường dẫn kết nối Sheet. Hãy dán link /exec vào ô bên dưới!";
-        return;
+        API_URL = decodeEndpointToken(DEFAULT_API_TOKEN);
       }
 
       errEl.style.color = "var(--info)";
@@ -3521,7 +3565,10 @@
           return Boolean(uPin && rawInput === uPin);
         }
         if (uHash && candidateHash === uHash) return true;
-        return (uPin && rawInput === uPin) || rawInput === uId || rawInput === shortId;
+        if (uPin && rawInput === uPin) return true;
+        // Chỉ cho phép đăng nhập bằng 5 số cuối của mã nhân viên nếu nhân viên đó chưa đổi mật khẩu riêng (uPin vẫn đang là uId)
+        if ((!uPin || uPin === uId) && (rawInput === uId || rawInput === shortId)) return true;
+        return false;
       });
 
       if (found) {
@@ -3530,8 +3577,7 @@
         try { sessionStorage.removeItem("GS_IQC_PIN_LOCK"); } catch (e) {}
         currentUser = Object.assign({}, found);
         if (found.role === "Admin") {
-          sessionAdminPin = rawInput;
-          pullAllDataFromCloud(false);
+          sessionAdminPin = found.pin || rawInput;
         } else {
           sessionAdminPin = "";
         }
@@ -3559,9 +3605,6 @@
     function logoutPIN() {
       currentUser = null;
       sessionAdminPin = "";
-      USERS.forEach(u => {
-        if (u.pinHash) u.pin = "";
-      });
       document.getElementById('userBadge').classList.add('hidden');
       document.getElementById('btnOpenPin').classList.remove('hidden');
       updateAdminUIControls();
@@ -3575,6 +3618,142 @@
         return;
       }
       fn();
+    }
+
+    // ===== TÍNH NĂNG NHÂN VIÊN TỰ ĐỔI MẬT KHẨU / MÃ PIN CÁ NHÂN =====
+    function openChangeMyPinModal() {
+      if (!USERS || USERS.length === 0) {
+        showToast("Chưa tải danh sách nhân sự! Vui lòng mở khóa Dashboard trước.", "error");
+        return;
+      }
+      const sel = document.getElementById('selfPinEmpSelect');
+      sel.innerHTML = USERS.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)} (${escapeHtml(u.id)})</option>`).join('');
+      if (currentUser && currentUser.id) {
+        sel.value = currentUser.id;
+      }
+      const oldInp = document.getElementById('selfOldPinInput');
+      const newInp = document.getElementById('selfNewPinInput');
+      const cfmInp = document.getElementById('selfConfirmPinInput');
+      oldInp.type = "password"; oldInp.value = "";
+      newInp.type = "password"; newInp.value = "";
+      cfmInp.type = "password"; cfmInp.value = "";
+      document.getElementById('selfPinError').innerText = "";
+      openModal('changeMyPinModal');
+      oldInp.focus();
+    }
+
+    async function submitChangeMyPin() {
+      const nowMs = Date.now();
+      const errEl = document.getElementById('selfPinError');
+      if (nowMs < pinLockUntil) {
+        const waitSec = Math.ceil((pinLockUntil - nowMs) / 1000);
+        errEl.innerText = `⛔ Đã khóa tạm thời do nhập sai nhiều lần. Vui lòng thử lại sau ${waitSec} giây!`;
+        return;
+      }
+
+      const targetId = (document.getElementById('selfPinEmpSelect').value || "").trim().toUpperCase();
+      const oldRaw = (document.getElementById('selfOldPinInput').value || "").trim();
+      const newRaw = (document.getElementById('selfNewPinInput').value || "").trim();
+      const cfmRaw = (document.getElementById('selfConfirmPinInput').value || "").trim();
+
+      if (!targetId || !oldRaw || !newRaw || !cfmRaw) {
+        errEl.innerText = "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới!";
+        return;
+      }
+      if (newRaw.length < 4) {
+        errEl.innerText = "Mật khẩu / Mã PIN mới phải có ít nhất 4 ký tự!";
+        return;
+      }
+      if (newRaw !== cfmRaw) {
+        errEl.innerText = "Mật khẩu / Mã PIN mới nhập lại không khớp!";
+        return;
+      }
+
+      const userObj = USERS.find(u => String(u.id || "").trim().toUpperCase() === targetId);
+      if (!userObj) {
+        errEl.innerText = "Không tìm thấy nhân sự này trong hệ thống!";
+        return;
+      }
+
+      const uPin = String(userObj.pin || "").trim().toUpperCase();
+      const uHash = String(userObj.pinHash || "").trim().toLowerCase();
+      const uId = String(userObj.id || "").trim().toUpperCase();
+      const shortId = uId.replace("GS.", "");
+      const oldUpper = oldRaw.toUpperCase();
+      const oldCandidateHash = computeClientPinHash(uId, oldUpper);
+
+      let isOldValid = false;
+      if (uHash && oldCandidateHash === uHash) isOldValid = true;
+      else if (uPin && oldUpper === uPin) isOldValid = true;
+      else if (userObj.role !== "Admin" && (!uPin || uPin === uId) && (oldUpper === uId || oldUpper === shortId)) isOldValid = true;
+
+      if (!isOldValid) {
+        pinFailCount++;
+        if (pinFailCount >= MAX_AUTH_ATTEMPTS) {
+          pinLockUntil = Date.now() + LOCKOUT_DURATION_MS;
+          pinFailCount = 0;
+          try { sessionStorage.setItem("GS_IQC_PIN_LOCK", String(pinLockUntil)); } catch (e) {}
+          errEl.innerText = "⛔ Nhập sai mật khẩu hiện tại quá 5 lần! Tạm khóa trong 60 giây.";
+        } else {
+          errEl.innerText = `❌ Mật khẩu / Mã PIN hiện tại không đúng! (Còn ${MAX_AUTH_ATTEMPTS - pinFailCount} lần thử)`;
+        }
+        return;
+      }
+
+      pinFailCount = 0;
+      pinLockUntil = 0;
+      try { sessionStorage.removeItem("GS_IQC_PIN_LOCK"); } catch (e) {}
+
+      // Cập nhật mật khẩu/PIN mới vào bộ nhớ và đồng bộ ngay lên Google Sheets
+      const prevPinForServer = userObj.pin || oldRaw;
+      userObj.pin = newRaw;
+      userObj.pinHash = computeClientPinHash(uId, newRaw);
+
+      if (currentUser && String(currentUser.id).toUpperCase() === uId) {
+        currentUser.pin = newRaw;
+        currentUser.pinHash = userObj.pinHash;
+        if (currentUser.role === "Admin") sessionAdminPin = newRaw;
+      }
+
+      await persistEncryptedVaultToLocal(buildCleanMemoryPayload(false));
+
+      if (API_URL && API_URL.startsWith("https://script.google.com")) {
+        await pushSelfPinChangeToCloud(uId, prevPinForServer, newRaw);
+      }
+
+      closeModal('changeMyPinModal');
+      showToast(`✅ Đã đổi mật khẩu/PIN cá nhân cho ${userObj.name} (${uId}) và đồng bộ lên Sheet!`, "info");
+    }
+
+    async function pushSelfPinChangeToCloud(empId, oldPinVal, newPinVal) {
+      if (!API_URL || !API_URL.startsWith("https://script.google.com")) return;
+      const authPassToUse = sessionAuthPass || systemPass;
+      if (!authPassToUse) return;
+      updateSyncStatusBadge("syncing", "⏳ Đang lưu mật khẩu mới lên Sheet...");
+      try {
+        // Tương thích đồng thời với cả Code.gs mới (selfPinChange) và Code.gs cũ (syncUsersFromWeb)
+        const rawObj = buildCleanMemoryPayload(false);
+        rawObj.authPass = authPassToUse;
+        rawObj.systemPass = systemPass || sessionAuthPass;
+        rawObj.syncUsersFromWeb = true;
+        rawObj.selfPinChange = {
+          empId: empId,
+          oldPin: oldPinVal,
+          newPin: newPinVal
+        };
+        if (sessionAdminPin) rawObj.adminPin = sessionAdminPin;
+        await fetch(API_URL, {
+          method: "POST",
+          mode: "no-cors",
+          credentials: "omit",
+          referrerPolicy: "no-referrer",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(rawObj)
+        });
+        updateSyncStatusBadge("synced", "☁️ Đã đồng bộ mật khẩu lên Sheet");
+      } catch (err) {
+        updateSyncStatusBadge("error", "⚠️ Lỗi gửi Sheet");
+      }
     }
 
     // ================= 12. TAB 6: GIAO VIỆC & ĐÁNH GIÁ KPI =================
@@ -4037,7 +4216,7 @@
       closeModal('sheetConfigModal');
     }
 
-    async function pushAllDataToCloud(showAlert = false, syncUsersFlag = false) {
+    async function pushAllDataToCloud(showAlert = false, syncUsersFlag = false, authPassOverride = "", adminPinOverride = "") {
       const cfgEl = document.getElementById('cfgApiUrlInput');
       const customRaw = cfgEl && !document.getElementById('sheetConfigModal').classList.contains('hidden') ? cfgEl.value.trim() : "";
       const url = decodeEndpointToken(customRaw) || API_URL;
@@ -4045,7 +4224,7 @@
         if (showAlert) showToast("Vui lòng nhập đường dẫn Web App URL trước!", "error");
         return;
       }
-      const authPassToUse = sessionAuthPass || systemPass;
+      const authPassToUse = authPassOverride || sessionAuthPass || systemPass;
       if (!authPassToUse) {
         updateSyncStatusBadge("error", "🔒 Chưa xác thực");
         return;
@@ -4055,9 +4234,9 @@
         const allowUserSync = Boolean(syncUsersFlag && isAdminSession());
         const rawObj = buildCleanMemoryPayload(allowUserSync);
         rawObj.authPass = authPassToUse;
+        rawObj.systemPass = systemPass || sessionAuthPass;
         if (allowUserSync) {
-          rawObj.systemPass = systemPass || sessionAuthPass;
-          rawObj.adminPin = sessionAdminPin;
+          rawObj.adminPin = adminPinOverride || sessionAdminPin || (currentUser ? currentUser.pin : "");
         }
         await fetch(url, {
           method: "POST",
@@ -4067,7 +4246,10 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(rawObj)
         });
-        if (allowUserSync && systemPass) sessionAuthPass = systemPass;
+        if (allowUserSync && systemPass) {
+          sessionAuthPass = systemPass;
+          persistEncryptedVaultToLocal(buildCleanMemoryPayload(false));
+        }
         updateSyncStatusBadge("synced", "☁️ Đã đồng bộ Sheet");
         if (showAlert) showToast("☁️ Đã đẩy toàn bộ dữ liệu 6 hạng mục lên Google Sheets thành công!", "info");
       } catch (err) {
@@ -4119,7 +4301,7 @@
       updateSyncStatusBadge, populateDynamicYearDropdowns, syncAllFiltersToRealTime,
       openSecurityModal, saveSecurityConfig, updateBulletinClockLabel, renderDailyBulletin,
       jumpToSection, renderSidebarNav, openMenuConfigModal, renderMenuConfigList,
-      toggleMenuVisible, moveMenuOrder, toggleGateUrlSetup, saveGateCustomApiUrl,
+      toggleMenuVisible, moveMenuOrder, openChangeMyPinModal, submitChangeMyPin,
       unlockDashboard, lockDashboardGate, refreshAllViews, manualSyncNow, forceSyncAndReset,
       renderMatrix44h, openLeaveCellPickerByIdx, openLeaveCellPicker, applyLeaveValue,
       openAddStaffModal, deleteStaff44h, saveNewStaff, matchMonthAndYear, evaluateExpiryStatus,
