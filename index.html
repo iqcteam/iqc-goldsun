@@ -2007,6 +2007,56 @@
       const box = document.getElementById('bulletinChipsContainer');
       if (!box) return;
 
+      const now = new Date();
+      const curY = now.getFullYear();
+      const curM = now.getMonth() + 1;
+      const curD = now.getDate();
+
+      // 1. KIỂM TRA NHÂN SỰ NGHỈ HÔM NAY & NGÀY MAI (TỪ TAB 1 - BẢNG NGHỈ 44H & NGHỈ PHÉP)
+      const todayBucket = getLeaveRecordBucket(curY, curM);
+      const todayLeaveStaff = [];
+      USERS.forEach(emp => {
+        const empDays = todayBucket[emp.id] || {};
+        const leaveVal = empDays[curD] || "";
+        if (leaveVal) {
+          todayLeaveStaff.push(`${emp.name} (${leaveVal})`);
+        }
+      });
+
+      const tmrDate = new Date(curY, curM - 1, curD + 1);
+      const tmrY = tmrDate.getFullYear();
+      const tmrM = tmrDate.getMonth() + 1;
+      const tmrD = tmrDate.getDate();
+      const tmrBucket = getLeaveRecordBucket(tmrY, tmrM);
+      const tomorrowLeaveStaff = [];
+      USERS.forEach(emp => {
+        const empDays = tmrBucket[emp.id] || {};
+        const leaveVal = empDays[tmrD] || "";
+        if (leaveVal) {
+          tomorrowLeaveStaff.push(`${emp.name} (${leaveVal})`);
+        }
+      });
+
+      // 2. KIỂM TRA THIẾT BỊ BÁO HỎNG / LỖI (NG) HOẶC ĐANG BẢO TRÌ (BT) HÔM NAY (TỪ TAB 5.3)
+      const brokenEquipsToday = [];
+      const maintEquipsToday = [];
+      ["Ca 1", "Ca 2"].forEach(shiftName => {
+        const mKey = getEquipDailyMatrixKey(curY, curM, shiftName);
+        const shiftBucket = equipDailyMatrixData[mKey] || {};
+        equipList.forEach(eq => {
+          const rec = shiftBucket[eq.ma];
+          const statusToday = (rec && rec.days) ? rec.days[curD] : "";
+          if (statusToday === "NG") {
+            const label = `${eq.ma} (${shiftName})`;
+            if (!brokenEquipsToday.includes(label)) brokenEquipsToday.push(label);
+          } else if (statusToday === "BT") {
+            const label = `${eq.ma} (${shiftName})`;
+            if (!maintEquipsToday.includes(label)) maintEquipsToday.push(label);
+          }
+        });
+      });
+
+      // 3. CÁC HẠNG MỤC CẢNH BÁO MẪU CHUẨN, HIỆU CHUẨN THIẾT BỊ, HÀNG NG, GIAO VIỆC & LOT PHÁT SINH
       const expSamples = sampleList.filter(r => {
         const st = evaluateExpiryStatus(r.han).label;
         return st === "Hết hạn" || st === "Sắp hết hạn";
@@ -2023,6 +2073,19 @@
       const todayLots = lotData.filter(r => r.ngay === TODAY_STR).length;
 
       let html = '';
+      if (todayLeaveStaff.length > 0) {
+        const chipCls = todayLeaveStaff.length > 3 ? "b-chip-danger" : "b-chip-warn";
+        html += `<span class="b-chip ${chipCls}" onclick="jumpToLeaveMonth(${curY}, ${curM})" title="Click để mở Bảng nghỉ 44h & Nghỉ phép">🏖️ Hôm nay nghỉ (${todayLeaveStaff.length} NV): ${escapeHtml(todayLeaveStaff.join(', '))}</span>`;
+      }
+      if (tomorrowLeaveStaff.length > 0) {
+        html += `<span class="b-chip b-chip-info" onclick="jumpToLeaveMonth(${tmrY}, ${tmrM})" title="Nhắc trước lịch đăng ký nghỉ ngày mai">📅 Ngày mai nghỉ (${tomorrowLeaveStaff.length} NV): ${escapeHtml(tomorrowLeaveStaff.join(', '))}</span>`;
+      }
+      if (brokenEquipsToday.length > 0) {
+        html += `<span class="b-chip b-chip-danger" onclick="jumpToSection('tab5', 'subTab5_3')" title="Thiết bị đo đang báo lỗi NG trong ngày hôm nay">🚨 Thiết bị hỏng/lỗi NG hôm nay (${brokenEquipsToday.length}): ${escapeHtml(brokenEquipsToday.join(', '))}</span>`;
+      }
+      if (maintEquipsToday.length > 0) {
+        html += `<span class="b-chip b-chip-warn" onclick="jumpToSection('tab5', 'subTab5_3')" title="Thiết bị đang tạm dừng bảo trì trong ngày hôm nay">🛠️ Thiết bị đang bảo trì BT (${maintEquipsToday.length}): ${escapeHtml(maintEquipsToday.join(', '))}</span>`;
+      }
       if (expSamples > 0) {
         html += `<span class="b-chip b-chip-danger" onclick="jumpToSection('tab5', 'subTab5_1')">🔴 ${expSamples} Bản mẫu hết/sắp hết hạn</span>`;
       }
@@ -2043,9 +2106,18 @@
       }
 
       if (!html) {
-        html = `<span class="b-chip b-chip-ok">✅ Tất cả mẫu chuẩn, thiết bị đo, hàng NG & công việc hôm nay đều trong trạng thái chuẩn (OK)</span>`;
+        html = `<span class="b-chip b-chip-ok">✅ Hôm nay quân số đi làm đầy đủ (0 nghỉ) · Tất cả mẫu chuẩn, thiết bị đo, hàng NG & công việc đều ở trạng thái chuẩn (OK)</span>`;
       }
       box.innerHTML = html;
+    }
+
+    function jumpToLeaveMonth(targetY, targetM) {
+      const mEl = document.getElementById('monthSelect');
+      const yEl = document.getElementById('yearSelectTab1');
+      if (mEl) mEl.value = String(targetM);
+      if (yEl) yEl.value = String(targetY);
+      renderMatrix44h();
+      jumpToSection('tab1');
     }
 
     function jumpToSection(tabId, subTab5Id) {
@@ -4321,7 +4393,7 @@
       previewAutoTaskCodeByDate, initTab6Filters, getTaskStatusInfo, getUserNameById,
       renderTab6All, renderTab6TasksTable, toggleCompleteTask, renderTab6KPITable,
       toggleAssignPermission, populateTaskModalDropdowns, openAddTaskModal, openEditTaskModal,
-      saveTaskForm, deleteTaskRow, exportFullBackupJSON, importFullBackupJSON,
+      saveTaskForm, deleteTaskRow, jumpToLeaveMonth, exportFullBackupJSON, importFullBackupJSON,
       executeRestoreConfirm, cancelRestoreConfirm, openSheetConfigModal,
       generateEncodedTokenForGithub, copyGithubEncodedToken, testSheetConnection,
       saveSheetConfig, pushAllDataToCloud, togglePinVisibility, askDeleteConfirm,
