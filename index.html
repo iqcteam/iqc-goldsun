@@ -226,6 +226,16 @@
     .gs-toast.toast-info { border-left-color: var(--info); background: #f8fbff; }
     @keyframes gsToastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     .sec-shield-pill { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .st-jig { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .cat-jig { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; display: inline-block; }
+    .type-switch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+    .type-opt { border: 2px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; background: #fff; transition: 0.15s; }
+    .type-opt.active { border-color: var(--primary-med); background: var(--primary-light); color: var(--primary); }
+    .cal-disabled-banner { grid-column: span 2; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #475569; font-weight: 600; }
+    .filter-pill-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+    .filter-pill-btn { padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border); background: #f8fafc; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+    .filter-pill-btn:hover:not(.active) { background: #e2e8f0; color: var(--text); }
+    .filter-pill-btn.active { background: var(--primary-med); color: #fff; border-color: var(--primary-med); box-shadow: 0 2px 6px rgba(21, 128, 61, 0.2); }
   </style>
 </head>
 <body>
@@ -584,40 +594,29 @@
         </div>
       </div>
 
-      <!-- TAB CON 5.2: DANH MỤC HIỆU CHUẨN THIẾT BỊ -->
+      <!-- TAB CON 5.2: DANH MỤC THIẾT BỊ ĐO & JIG -->
       <div id="subTab5_2" class="sub-tab5-pane hidden">
         <div class="section-card" id="tab5EquipCaptureArea">
           <div class="section-header">
             <div>
-              <div class="section-title">DANH MỤC THEO DÕI HIỆU CHUẨN THIẾT BỊ ĐO KIỂM - BỘ PHẬN IQC</div>
+              <div class="section-title">DANH MỤC THIẾT BỊ ĐO KIỂM & JIG - BỘ PHẬN IQC</div>
               <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Khi Admin thêm hoặc xóa thiết bị tại bảng này, danh sách thiết bị ở Tab 3 (Báo cáo theo dõi hàng ngày) sẽ tự động cập nhật theo.
+                Quản lý <b>Thiết bị đo (có hiệu chuẩn)</b> và <b>Jig kiểm tra (không hiệu chuẩn)</b>. Danh sách tự động đồng bộ sang Tab 3 (Báo cáo theo dõi hàng ngày).
               </div>
             </div>
             <div class="toolbar-group">
-              <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab5Equip', 'Danh_Muc_Thiet_Bi_Bo_Phan_IQC')">📊 Xuất Excel</button>
-              <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab5EquipCaptureArea', 'Danh_Muc_Thiet_Bi_Bo_Phan_IQC')">📸 Xuất Ảnh</button>
-              <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddEquipModal)">+ Thêm Thiết Bị Đo</button>
+              <input type="text" id="searchEquipTab5" class="select-box" placeholder="🔍 Tìm mã, tên, model, vị trí..." oninput="renderTab5Equip()" style="width: 185px;">
+              <button type="button" class="btn btn-blue no-capture" onclick="exportTableToExcel('tableTab5Equip', 'Danh_Muc_Thiet_Bi_Jig_IQC')">📊 Xuất Excel</button>
+              <button type="button" class="btn btn-danger no-capture" onclick="exportSectionToImage('tab5EquipCaptureArea', 'Danh_Muc_Thiet_Bi_Jig_IQC')">📸 Xuất Ảnh</button>
+              <button type="button" class="btn btn-green no-capture" onclick="requireAuth(openAddEquipModal)">+ Thêm Thiết Bị / Jig</button>
             </div>
           </div>
 
+          <div class="filter-pill-bar no-capture" id="equipTypePillBar"></div>
+
           <div class="matrix-wrap">
             <table class="matrix-table" id="tableTab5Equip">
-              <thead>
-                <tr>
-                  <th>STT</th>
-                  <th>Mã Thiết Bị</th>
-                  <th>Tên Thiết Bị Đo</th>
-                  <th>Số Serial</th>
-                  <th>Vị Trí Đặt Máy</th>
-                  <th>Ngày Hiệu Chuẩn</th>
-                  <th>Hạn Tiếp Theo</th>
-                  <th>Trạng Thái</th>
-                  <th>Người Phụ Trách</th>
-                  <th>Ảnh Tem</th>
-                  <th class="no-capture">Thao Tác</th>
-                </tr>
-              </thead>
+              <thead id="headTab5Equip"></thead>
               <tbody id="bodyTab5Equip"></tbody>
             </table>
           </div>
@@ -1126,25 +1125,49 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 5-2: THÊM / SỬA THIẾT BỊ ĐO KIỂM ================= -->
+  <!-- ================= MODAL 5-2: THÊM / SỬA THIẾT BỊ ĐO KIỂM & JIG ================= -->
   <div id="equipModal" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 id="equipModalTitle">Cập Nhật Thiết Bị Đo Kiểm & Hiệu Chuẩn - Bộ Phận IQC</h3>
+        <h3 id="equipModalTitle">Cập Nhật Thiết Bị Đo / Jig - Bộ Phận IQC</h3>
         <button type="button" class="btn btn-outline" onclick="closeModal('equipModal')">✕</button>
       </div>
       <input type="hidden" id="equipEditIdx" value="-1">
+      <div class="form-group">
+        <label>Phân Loại (*):</label>
+        <div class="type-switch-grid">
+          <div id="optTypeMeasure" class="type-opt active" onclick="selectEquipType('MEASURE')">
+            <span>📏</span>
+            <div>
+              <div>Thiết Bị Đo Kiểm</div>
+              <div style="font-size: 10px; font-weight: 500; color: var(--text-muted);">Có lịch hiệu chuẩn & cảnh báo hạn</div>
+            </div>
+          </div>
+          <div id="optTypeJig" class="type-opt" onclick="selectEquipType('JIG')">
+            <span>🧰</span>
+            <div>
+              <div>Jig Kiểm Tra</div>
+              <div style="font-size: 10px; font-weight: 500; color: var(--text-muted);">Không áp dụng hiệu chuẩn định kỳ</div>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="fEqType" value="MEASURE">
+      </div>
       <div class="form-grid">
-        <div class="form-group"><label>Mã Thiết Bị (*):</label><input type="text" id="fEqMa" class="form-control" placeholder="VD: TB-IQC-01"></div>
-        <div class="form-group"><label>Tên Thiết Bị Đo (*):</label><input type="text" id="fEqTen" class="form-control" placeholder="Nhập tên thiết bị đo..."></div>
-        <div class="form-group"><label>Số Serial:</label><input type="text" id="fEqSerial" class="form-control" placeholder="Nhập số Serial..."></div>
-        <div class="form-group"><label>Vị Trí Đặt Máy:</label><input type="text" id="fEqViTri" class="form-control" placeholder="VD: Bàn kiểm IQC số 1"></div>
-        <div class="form-group"><label>Ngày Hiệu Chuẩn Gần Nhất:</label><input type="date" id="fEqNgayHC" class="form-control"></div>
-        <div class="form-group"><label>Hạn Hiệu Chuẩn Tiếp Theo:</label><input type="date" id="fEqHanHC" class="form-control"></div>
+        <div class="form-group"><label id="lblEqMa">Mã Thiết Bị (*):</label><input type="text" id="fEqMa" class="form-control" placeholder="VD: TB-IQC-01"></div>
+        <div class="form-group"><label id="lblEqTen">Tên Thiết Bị Đo (*):</label><input type="text" id="fEqTen" class="form-control" placeholder="Nhập tên thiết bị đo..."></div>
+        <div class="form-group"><label id="lblEqSerial">Số Serial:</label><input type="text" id="fEqSerial" class="form-control" placeholder="Nhập số Serial..."></div>
+        <div class="form-group"><label>Vị Trí Đặt / Sử Dụng:</label><input type="text" id="fEqViTri" class="form-control" placeholder="VD: Bàn kiểm IQC số 1"></div>
+        <div id="calFieldsNotice" class="cal-disabled-banner hidden">
+          🧰 Loại <b>Jig</b> không áp dụng hiệu chuẩn định kỳ — hệ thống sẽ không tạo cảnh báo hết hạn hiệu chuẩn cho mục này.
+        </div>
+        <div class="form-group" id="grpNgayHC"><label>Ngày Hiệu Chuẩn Gần Nhất:</label><input type="date" id="fEqNgayHC" class="form-control"></div>
+        <div class="form-group" id="grpHanHC"><label>Hạn Hiệu Chuẩn Tiếp Theo:</label><input type="date" id="fEqHanHC" class="form-control"></div>
+        <div class="form-group full"><label id="lblEqNote">Ghi Chú / Lưu Ý Sử Dụng Thiết Bị Đo (Tùy chọn):</label><input type="text" id="fEqNote" class="form-control" placeholder="VD: Hiệu chuẩn định kỳ 12 tháng/lần, kiểm tra điểm trước ca..."></div>
         <div class="form-group full">
-          <label>Ảnh Tem Hiệu Chuẩn (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
+          <label id="lblEqImg">Ảnh Tem Hiệu Chuẩn (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
           <div class="paste-zone" tabindex="0">
-            <div style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh tem hiệu chuẩn</div>
+            <div id="lblPasteHint" style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh tem hiệu chuẩn</div>
             <input type="file" id="fEqImg" accept="image/*" onchange="previewPasteImage(this, 'eqPastePreview')" style="font-size: 11px; margin-top:4px;">
             <div><img id="eqPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
           </div>
@@ -1152,7 +1175,7 @@
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
         <button type="button" class="btn btn-outline" onclick="closeModal('equipModal')">Đóng</button>
-        <button type="button" class="btn btn-green" onclick="saveEquipForm()">💾 Lưu Thiết Bị</button>
+        <button type="button" class="btn btn-green" onclick="saveEquipForm()">💾 Lưu Dữ Liệu</button>
       </div>
     </div>
   </div>
@@ -2063,6 +2086,7 @@
       }).length;
 
       const expEquips = equipList.filter(r => {
+        if (r.loaiTB === "JIG") return false;
         const st = evaluateExpiryStatus(r.hanHC).label;
         return st === "Hết hạn" || st === "Sắp hết hạn";
       }).length;
@@ -3269,27 +3293,159 @@
       }
     }
 
+    let activeEquipFilter = "ALL";
+
+    function setEquipFilter(filterVal) {
+      activeEquipFilter = filterVal;
+      renderTab5Equip();
+    }
+
+    function renderEquipFilterPills() {
+      const bar = document.getElementById('equipTypePillBar');
+      if (!bar) return;
+      const total = equipList.length;
+      const measureCount = equipList.filter(r => r.loaiTB !== "JIG").length;
+      const jigCount = equipList.filter(r => r.loaiTB === "JIG").length;
+
+      bar.innerHTML = `
+        <button type="button" class="filter-pill-btn ${activeEquipFilter === 'ALL' ? 'active' : ''}" onclick="setEquipFilter('ALL')">
+          📋 Tất cả (${total})
+        </button>
+        <button type="button" class="filter-pill-btn ${activeEquipFilter === 'MEASURE' ? 'active' : ''}" onclick="setEquipFilter('MEASURE')">
+          📏 Thiết bị đo (${measureCount})
+        </button>
+        <button type="button" class="filter-pill-btn ${activeEquipFilter === 'JIG' ? 'active' : ''}" onclick="setEquipFilter('JIG')">
+          🧰 Jig (${jigCount})
+        </button>
+      `;
+    }
+
+    function selectEquipType(typeVal) {
+      const isJig = typeVal === "JIG";
+      document.getElementById('fEqType').value = isJig ? "JIG" : "MEASURE";
+      document.getElementById('optTypeMeasure').classList.toggle('active', !isJig);
+      document.getElementById('optTypeJig').classList.toggle('active', isJig);
+
+      document.getElementById('lblEqMa').innerText = isJig ? "Mã Jig (*):" : "Mã Thiết Bị (*):";
+      document.getElementById('fEqMa').placeholder = isJig ? "VD: JIG-IQC-01" : "VD: TB-IQC-01";
+      document.getElementById('lblEqTen').innerText = isJig ? "Tên Jig Kiểm Tra (*):" : "Tên Thiết Bị Đo (*):";
+      document.getElementById('fEqTen').placeholder = isJig ? "VD: Jig kiểm tra kích thước hộp..." : "Nhập tên thiết bị đo...";
+
+      document.getElementById('lblEqSerial').innerText = isJig ? "Model Áp Dụng:" : "Số Serial:";
+      document.getElementById('fEqSerial').placeholder = isJig ? "Nhập model..." : "Nhập số Serial...";
+
+      const lblNote = document.getElementById('lblEqNote');
+      const inpNote = document.getElementById('fEqNote');
+      if (lblNote) {
+        lblNote.innerText = isJig
+          ? "Ghi Chú / Hướng Dẫn Kiểm Tra Jig (Tùy chọn):"
+          : "Ghi Chú / Lưu Ý Sử Dụng Thiết Bị Đo (Tùy chọn):";
+      }
+      if (inpNote) {
+        inpNote.placeholder = isJig
+          ? "VD: Kiểm tra độ phẳng Jig, chốt định vị không rơ lỏng trước ca..."
+          : "VD: Hiệu chuẩn định kỳ 12 tháng/lần, kiểm tra điểm trước ca...";
+      }
+
+      document.getElementById('lblEqImg').innerText = isJig
+        ? "Ảnh Thực Tế Jig (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):"
+        : "Ảnh Tem Hiệu Chuẩn (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):";
+      document.getElementById('lblPasteHint').innerHTML = isJig
+        ? "📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh thực tế Jig"
+        : "📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh tem hiệu chuẩn";
+
+      const grpNgay = document.getElementById('grpNgayHC');
+      const grpHan = document.getElementById('grpHanHC');
+      const notice = document.getElementById('calFieldsNotice');
+      const inpNgay = document.getElementById('fEqNgayHC');
+      const inpHan = document.getElementById('fEqHanHC');
+
+      if (isJig) {
+        grpNgay.classList.add('hidden');
+        grpHan.classList.add('hidden');
+        notice.classList.remove('hidden');
+        inpNgay.value = "";
+        inpHan.value = "";
+      } else {
+        grpNgay.classList.remove('hidden');
+        grpHan.classList.remove('hidden');
+        notice.classList.add('hidden');
+        if (!inpNgay.value) inpNgay.value = getTodayISO();
+      }
+    }
+
     function renderTab5Equip() {
+      renderEquipFilterPills();
+      const thead = document.getElementById('headTab5Equip');
       const tbody = document.getElementById('bodyTab5Equip');
       tbody.innerHTML = '';
       const isAdmin = isAdminSession();
-      equipList.forEach((r, i) => {
-        const stObj = evaluateExpiryStatus(r.hanHC);
+      const searchEl = document.getElementById('searchEquipTab5');
+      const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
+      const isJigTab = activeEquipFilter === "JIG";
+
+      if (thead) {
+        thead.innerHTML = `<tr>
+          <th>STT</th>
+          <th>Phân Loại</th>
+          <th>${isJigTab ? 'Mã Jig' : 'Mã TB / Jig'}</th>
+          <th>${isJigTab ? 'Tên Jig' : 'Tên Thiết Bị / Jig'}</th>
+          <th>${isJigTab ? 'Model Áp Dụng' : 'Serial / Model'}</th>
+          <th>Vị Trí Đặt</th>
+          ${isJigTab ? '' : '<th>Ngày Hiệu Chuẩn</th><th>Hạn Tiếp Theo</th>'}
+          <th>Trạng Thái</th>
+          <th>Người Phụ Trách</th>
+          <th>${isJigTab ? 'Ảnh Thực Tế' : 'Ảnh Tem / Thực Tế'}</th>
+          <th class="no-capture">Thao Tác</th>
+        </tr>`;
+      }
+
+      const filtered = equipList.filter(r => {
+        const isJig = r.loaiTB === "JIG";
+        if (activeEquipFilter === "MEASURE" && isJig) return false;
+        if (activeEquipFilter === "JIG" && !isJig) return false;
+        if (!q) return true;
+        return `${r.ma} ${r.ten} ${r.serial} ${r.viTri} ${r.ghiChu || ''}`.toLowerCase().includes(q);
+      });
+
+      filtered.forEach((r, idx) => {
+        const origIdx = equipList.indexOf(r);
+        const isJig = r.loaiTB === "JIG";
+        const typeBadge = isJig
+          ? `<span class="cat-jig">🧰 Jig</span>`
+          : `<span class="cat-pill">📏 Thiết bị đo</span>`;
+
+        let statusHtml = "";
+        if (isJig) {
+          statusHtml = `<span class="status-badge st-jig">Không hiệu chuẩn</span>`;
+        } else {
+          const stObj = evaluateExpiryStatus(r.hanHC);
+          statusHtml = `<span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span>`;
+        }
+
+        const calColsHtml = isJigTab
+          ? ''
+          : `<td>${isJig ? '<span style="color:#94a3b8;">—</span>' : formatDateVN(r.ngayHC)}</td>
+             <td>${isJig ? '<span style="color:#94a3b8;">—</span>' : formatDateVN(r.hanHC)}</td>`;
+
         const safeImg = sanitizeImageSrc(r.img);
         tbody.innerHTML += `<tr>
-          <td>${i + 1}</td>
+          <td>${idx + 1}</td>
+          <td>${typeBadge}</td>
           <td style="font-weight:bold; color:var(--primary);">${escapeHtml(r.ma)}</td>
-          <td><b>${escapeHtml(r.ten)}</b></td>
-          <td>${escapeHtml(r.serial)}</td>
-          <td>${escapeHtml(r.viTri)}</td>
-          <td>${formatDateVN(r.ngayHC)}</td>
-          <td>${formatDateVN(r.hanHC)}</td>
-          <td><span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span></td>
+          <td style="text-align:left; white-space:normal; min-width:170px;">
+            <b>${escapeHtml(r.ten)}</b>
+            ${r.ghiChu ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${escapeHtml(r.ghiChu)}</div>` : ''}
+          </td>
+          <td>${escapeHtml(r.serial || '—')}</td>
+          <td>${escapeHtml(r.viTri || '—')}</td>
+          ${calColsHtml}
+          <td>${statusHtml}</td>
           <td>${escapeHtml(r.nguoiPT)}</td>
-          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewEquipRowImage(${i})" alt="Ảnh tem">` : '—'}</td>
+          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewEquipRowImage(${origIdx})" alt="Ảnh">` : '—'}</td>
           <td class="no-capture">
-            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditEquipModal(${i}))">✏ Sửa</button>
-            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteEquipRow(${i})">🗑️</button>` : ""}
+            <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditEquipModal(${origIdx}))">✏ Sửa</button>
+            ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteEquipRow(${origIdx})">🗑️</button>` : ""}
           </td>
         </tr>`;
       });
@@ -3298,45 +3454,52 @@
 
     function openAddEquipModal() {
       TODAY_STR = getTodayISO();
-      document.getElementById('equipModalTitle').innerText = "Thêm Thiết Bị Đo Kiểm - Bộ Phận IQC";
+      document.getElementById('equipModalTitle').innerText = "Thêm Thiết Bị Đo / Jig - Bộ Phận IQC";
       document.getElementById('equipEditIdx').value = "-1";
       document.getElementById('fEqMa').value = "";
       document.getElementById('fEqTen').value = "";
       document.getElementById('fEqSerial').value = "";
       document.getElementById('fEqViTri').value = "";
+      document.getElementById('fEqNote').value = "";
       document.getElementById('fEqNgayHC').value = TODAY_STR;
       document.getElementById('fEqHanHC').value = "";
       setPreviewImage('eqPastePreview', "");
+      selectEquipType(activeEquipFilter === "JIG" ? "JIG" : "MEASURE");
       openModal('equipModal');
     }
 
     function openEditEquipModal(idx) {
       const r = equipList[idx];
       if (!r) return;
-      document.getElementById('equipModalTitle').innerText = "Sửa Thiết Bị: " + r.ma;
+      document.getElementById('equipModalTitle').innerText = "Sửa: " + r.ma;
       document.getElementById('equipEditIdx').value = idx;
       document.getElementById('fEqMa').value = r.ma;
       document.getElementById('fEqTen').value = r.ten;
-      document.getElementById('fEqSerial').value = r.serial;
-      document.getElementById('fEqViTri').value = r.viTri;
-      document.getElementById('fEqNgayHC').value = r.ngayHC;
-      document.getElementById('fEqHanHC').value = r.hanHC;
+      document.getElementById('fEqSerial').value = r.serial || "";
+      document.getElementById('fEqViTri').value = r.viTri || "";
+      document.getElementById('fEqNote').value = r.ghiChu || "";
+      document.getElementById('fEqNgayHC').value = r.ngayHC || "";
+      document.getElementById('fEqHanHC').value = r.hanHC || "";
       setPreviewImage('eqPastePreview', r.img || "");
+      selectEquipType(r.loaiTB === "JIG" ? "JIG" : "MEASURE");
       openModal('equipModal');
     }
 
     function saveEquipForm() {
       if (!currentUser) return;
+      const loaiTB = document.getElementById('fEqType').value === "JIG" ? "JIG" : "MEASURE";
       const ma = document.getElementById('fEqMa').value.trim().toUpperCase();
       const ten = document.getElementById('fEqTen').value.trim();
-      if (!ma || !ten) { showToast("Vui lòng nhập Mã Thiết Bị và Tên Thiết Bị!", "error"); return; }
+      if (!ma || !ten) { showToast("Vui lòng nhập Mã và Tên Thiết Bị / Jig!", "error"); return; }
       const idx = parseInt(document.getElementById('equipEditIdx').value);
       const item = {
+        loaiTB,
         ma, ten,
         serial: document.getElementById('fEqSerial').value.trim(),
         viTri: document.getElementById('fEqViTri').value.trim(),
-        ngayHC: document.getElementById('fEqNgayHC').value || getTodayISO(),
-        hanHC: document.getElementById('fEqHanHC').value,
+        ngayHC: loaiTB === "JIG" ? "" : (document.getElementById('fEqNgayHC').value || getTodayISO()),
+        hanHC: loaiTB === "JIG" ? "" : document.getElementById('fEqHanHC').value,
+        ghiChu: document.getElementById('fEqNote').value.trim(),
         nguoiPT: currentUser ? currentUser.name : "",
         img: sanitizeImageSrc(tempBase64)
       };
@@ -3412,7 +3575,7 @@
 
         bodyHtml += `<tr>
           <td class="sticky-col-1" style="color:var(--primary);">${escapeHtml(eq.ma)}</td>
-          <td class="sticky-col-2">${escapeHtml(eq.ten)}</td>
+          <td class="sticky-col-2">${escapeHtml(eq.ten)}${eq.loaiTB === "JIG" ? ' <span class="cat-jig" style="padding:1px 5px; font-size:10px;">Jig</span>' : ''}</td>
           <td>${escapeHtml(eq.viTri)}</td>
           <td><span class="cat-pill">${escapeHtml(shift)}</span></td>
           <td><b>${escapeHtml(rec.checker)}</b></td>
@@ -4384,7 +4547,7 @@
       previewAutoNCRByDate, populateFiltersTab4, renderTab4, calcClaimPreview, calcClaimTotalOnly,
       openAddClaimModal, openEditClaimModal, saveClaimForm, deleteClaimRow, switchSubTab5,
       previewSampleRowImage, renderTab5Sample, openAddSampleModal, openEditSampleModal,
-      saveSampleForm, deleteSampleRow, previewEquipRowImage, renderTab5Equip, openAddEquipModal,
+      saveSampleForm, deleteSampleRow, previewEquipRowImage, setEquipFilter, renderEquipFilterPills, selectEquipType, renderTab5Equip, openAddEquipModal,
       openEditEquipModal, saveEquipForm, deleteEquipRow, getEquipDailyMatrixKey,
       renderTab5DailyMatrix, openEquipDailyCellPickerByIdx, openEquipDailyCellPicker,
       applyEquipDailyValue, markTodayAllEquipOK, setPreviewImage, previewPasteImage,
