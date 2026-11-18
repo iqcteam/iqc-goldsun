@@ -236,6 +236,12 @@
     .filter-pill-btn { padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border); background: #f8fafc; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 5px; }
     .filter-pill-btn:hover:not(.active) { background: #e2e8f0; color: var(--text); }
     .filter-pill-btn.active { background: var(--primary-med); color: #fff; border-color: var(--primary-med); box-shadow: 0 2px 6px rgba(21, 128, 61, 0.2); }
+    .paste-gallery { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+    .paste-gallery-item { position: relative; display: inline-block; }
+    .paste-gallery-item img { width: 78px; height: 78px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); display: block; cursor: pointer; }
+    .paste-gallery-del { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--danger); color: #fff; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+    .thumb-stack { position: relative; display: inline-block; cursor: pointer; }
+    .thumb-count-badge { position: absolute; bottom: -4px; right: -6px; background: var(--primary); color: #fff; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 10px; border: 1px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
   </style>
 </head>
 <body>
@@ -1031,8 +1037,8 @@
           <label>Đính Kèm Ảnh Minh Chứng (Bấm Ctrl + V để dán ảnh trực tiếp hoặc Chọn tệp):</label>
           <div class="paste-zone" tabindex="0">
             <div style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh từ bộ nhớ tạm</div>
-            <input type="file" id="fNgImg" accept="image/*" onchange="previewPasteImage(this, 'ngPastePreview')" style="font-size: 11px; margin-top:4px;">
-            <div><img id="ngPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
+            <input type="file" id="fNgImg" accept="image/*" multiple onchange="previewPasteImage(this, 'ngPastePreview')" style="font-size: 11px; margin-top:4px;">
+            <div id="ngPastePreview" class="paste-gallery"></div>
           </div>
         </div>
       </div>
@@ -1113,8 +1119,8 @@
           <label>Ảnh Chụp Mẫu Có Chữ Ký (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
           <div class="paste-zone" tabindex="0">
             <div style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh bản mẫu</div>
-            <input type="file" id="fSpImg" accept="image/*" onchange="previewPasteImage(this, 'spPastePreview')" style="font-size: 11px; margin-top:4px;">
-            <div><img id="spPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
+            <input type="file" id="fSpImg" accept="image/*" multiple onchange="previewPasteImage(this, 'spPastePreview')" style="font-size: 11px; margin-top:4px;">
+            <div id="spPastePreview" class="paste-gallery"></div>
           </div>
         </div>
       </div>
@@ -1168,8 +1174,8 @@
           <label id="lblEqImg">Ảnh Tem Hiệu Chuẩn (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
           <div class="paste-zone" tabindex="0">
             <div id="lblPasteHint" style="font-size: 12px; color: var(--primary); font-weight: 700;">📋 Click vào đây và nhấn <b>Ctrl + V</b> để dán ảnh tem hiệu chuẩn</div>
-            <input type="file" id="fEqImg" accept="image/*" onchange="previewPasteImage(this, 'eqPastePreview')" style="font-size: 11px; margin-top:4px;">
-            <div><img id="eqPastePreview" class="paste-preview-img" src="" alt="Preview"></div>
+            <input type="file" id="fEqImg" accept="image/*" multiple onchange="previewPasteImage(this, 'eqPastePreview')" style="font-size: 11px; margin-top:4px;">
+            <div id="eqPastePreview" class="paste-gallery"></div>
           </div>
         </div>
       </div>
@@ -1265,8 +1271,13 @@
         <h3>🖼️ Xem Ảnh Minh Chứng / Bản Mẫu / Tem Hiệu Chuẩn</h3>
         <button type="button" class="btn btn-outline" onclick="closeModal('imagePreviewModal')">✕</button>
       </div>
-      <div style="background:#0f172a; padding:12px; border-radius:8px; overflow:auto; max-height:75vh;">
-        <img id="lightboxPreviewImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Ảnh minh chứng" style="max-width:100%; max-height:68vh; border-radius:6px; object-fit:contain;">
+      <div style="background:#0f172a; padding:12px; border-radius:8px; overflow:auto; max-height:70vh;">
+        <img id="lightboxPreviewImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Ảnh minh chứng" style="max-width:100%; max-height:64vh; border-radius:6px; object-fit:contain;">
+      </div>
+      <div id="lightboxNavBar" class="hidden" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:10px;">
+        <button type="button" class="btn btn-outline" onclick="stepLightboxImage(-1)">◀ Ảnh trước</button>
+        <span id="lightboxCounter" style="font-size:12px; font-weight:700; color:var(--primary);">Ảnh 1 / 1</span>
+        <button type="button" class="btn btn-outline" onclick="stepLightboxImage(1)">Ảnh tiếp ▶</button>
       </div>
     </div>
   </div>
@@ -1364,6 +1375,32 @@
     let sessionAdminPin = "";
     let currentUser = null;
     let tempBase64 = "";
+    let tempImages = [];
+    const MAX_IMAGES_PER_RECORD = 6;
+    let lightboxImages = [];
+    let lightboxIdx = 0;
+
+    function getItemImages(item) {
+      if (!item) return [];
+      const arr = [];
+      if (Array.isArray(item.imgs)) {
+        item.imgs.forEach(s => {
+          const c = sanitizeImageSrc(s);
+          if (c && !arr.includes(c)) arr.push(c);
+        });
+      }
+      if (item.img) {
+        const c = sanitizeImageSrc(item.img);
+        if (c && !arr.includes(c)) arr.unshift(c);
+      }
+      return arr;
+    }
+
+    function renderThumbCellHtml(imgsArr, onClickExpr) {
+      if (!imgsArr || imgsArr.length === 0) return '—';
+      const badge = imgsArr.length > 1 ? `<span class="thumb-count-badge">+${imgsArr.length - 1}</span>` : '';
+      return `<div class="thumb-stack" onclick="${onClickExpr}" title="Bấm để xem ${imgsArr.length} ảnh"><img src="${imgsArr[0]}" class="thumb-img" alt="Ảnh">${badge}</div>`;
+    }
     let activeLeaveCell = null;
     let activeEquipDailyCell = null;
     let currentActiveTabId = "tab1";
@@ -2781,15 +2818,36 @@
       return ngPendingData.filter(r => matchMonthAndYear(r.ngay, fMonth, fYear) && (fNCC === "ALL" || r.ncc === fNCC) && (fSt === "ALL" || r.hienTrang === fSt));
     }
 
-    function openSafeImagePreview(src) {
-      const cleanSrc = sanitizeImageSrc(src);
-      if (!cleanSrc) {
+    function openSafeImagePreview(srcOrList, startIndex = 0) {
+      const list = Array.isArray(srcOrList)
+        ? srcOrList.map(sanitizeImageSrc).filter(Boolean)
+        : [sanitizeImageSrc(srcOrList)].filter(Boolean);
+      if (list.length === 0) {
         showToast("Định dạng ảnh không hợp lệ hoặc đã bị chặn vì lý do bảo mật!", "error");
         return;
       }
-      const imgEl = document.getElementById('lightboxPreviewImg');
-      if (imgEl) imgEl.src = cleanSrc;
+      lightboxImages = list;
+      lightboxIdx = Math.max(0, Math.min(startIndex, list.length - 1));
+      renderLightboxCurrent();
       openModal('imagePreviewModal');
+    }
+
+    function renderLightboxCurrent() {
+      const imgEl = document.getElementById('lightboxPreviewImg');
+      const navEl = document.getElementById('lightboxNavBar');
+      const cntEl = document.getElementById('lightboxCounter');
+      if (imgEl && lightboxImages[lightboxIdx]) imgEl.src = lightboxImages[lightboxIdx];
+      if (navEl) {
+        if (lightboxImages.length > 1) navEl.classList.remove('hidden');
+        else navEl.classList.add('hidden');
+      }
+      if (cntEl) cntEl.innerText = `Ảnh ${lightboxIdx + 1} / ${lightboxImages.length}`;
+    }
+
+    function stepLightboxImage(delta) {
+      if (lightboxImages.length <= 1) return;
+      lightboxIdx = (lightboxIdx + delta + lightboxImages.length) % lightboxImages.length;
+      renderLightboxCurrent();
     }
 
     function renderTab3() {
@@ -2799,12 +2857,12 @@
       const isAdmin = isAdminSession();
       filtered.forEach((r, i) => {
         const origIdx = ngPendingData.indexOf(r);
-        const safeImg = sanitizeImageSrc(r.img);
+        const rowImgs = getItemImages(r);
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td><td>${formatDateVN(r.ngay)}</td><td style="font-weight:bold;color:var(--primary)">${escapeHtml(r.maHang)}</td>
           <td>${escapeHtml(r.loaiHang)}</td><td>${escapeHtml(r.ncc)}</td><td style="color:var(--danger);font-weight:bold">${Number(r.slNG).toLocaleString()}</td>
           <td>${escapeHtml(r.loi)}</td><td><b>${escapeHtml(r.hienTrang)}</b></td><td>${escapeHtml(r.nguoiXN)}</td><td>${escapeHtml(r.ghiChu)}</td>
-          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewNGRowImage(${origIdx})" alt="Ảnh NG">` : '—'}</td>
+          <td>${renderThumbCellHtml(rowImgs, `previewNGRowImage(${origIdx})`)}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditNGModal(${origIdx}))">✏ Sửa</button>
             ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteNGRow(${origIdx})">🗑️</button>` : ""}
@@ -2815,9 +2873,8 @@
     }
 
     function previewNGRowImage(idx) {
-      if (ngPendingData[idx] && ngPendingData[idx].img) {
-        openSafeImagePreview(ngPendingData[idx].img);
-      }
+      const imgs = getItemImages(ngPendingData[idx]);
+      if (imgs.length > 0) openSafeImagePreview(imgs, 0);
     }
 
     function updateChartsTab3(filtered = getFilteredNGData()) {
@@ -2890,7 +2947,7 @@
       document.getElementById('fNgHienTrang').value = r.hienTrang;
       document.getElementById('fNgLoi').value = r.loi;
       document.getElementById('fNgGhiChu').value = r.ghiChu;
-      setPreviewImage('ngPastePreview', r.img || "");
+      setPreviewImages('ngPastePreview', getItemImages(r));
       openModal('ngModal');
     }
 
@@ -2910,7 +2967,8 @@
         loi: document.getElementById('fNgLoi').value.trim(),
         ghiChu: document.getElementById('fNgGhiChu').value.trim(),
         nguoiXN: currentUser.name,
-        img: sanitizeImageSrc(tempBase64)
+        img: tempImages[0] || "",
+        imgs: tempImages.slice()
       };
       if (idx === -1) ngPendingData.unshift(item); else ngPendingData[idx] = item;
 
@@ -3165,9 +3223,8 @@
     }
 
     function previewSampleRowImage(idx) {
-      if (sampleList[idx] && sampleList[idx].img) {
-        openSafeImagePreview(sampleList[idx].img);
-      }
+      const imgs = getItemImages(sampleList[idx]);
+      if (imgs.length > 0) openSafeImagePreview(imgs, 0);
     }
 
     function renderTab5Sample() {
@@ -3201,7 +3258,7 @@
       filtered.forEach((r, i) => {
         const origIdx = sampleList.indexOf(r);
         const stObj = evaluateExpiryStatus(r.han);
-        const safeImg = sanitizeImageSrc(r.img);
+        const rowImgs = getItemImages(r);
         tbody.innerHTML += `<tr>
           <td>${i + 1}</td>
           <td style="font-weight:bold; color:var(--primary);">${escapeHtml(r.code)}</td>
@@ -3214,7 +3271,7 @@
           <td>${formatDateVN(r.han)}</td>
           <td><span class="status-badge ${stObj.cls}">${stObj.label} (${stObj.sub})</span></td>
           <td>${escapeHtml(r.nguoiLuu)}</td>
-          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewSampleRowImage(${origIdx})" alt="Ảnh mẫu">` : '—'}</td>
+          <td>${renderThumbCellHtml(rowImgs, `previewSampleRowImage(${origIdx})`)}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditSampleModal(${origIdx}))">✏ Sửa</button>
             ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteSampleRow(${origIdx})">🗑️</button>` : ""}
@@ -3252,7 +3309,7 @@
       document.getElementById('fSpNguoiKy').value = r.nguoiKy || "";
       document.getElementById('fSpNgayKy').value = r.ngayKy;
       document.getElementById('fSpHan').value = r.han;
-      setPreviewImage('spPastePreview', r.img || "");
+      setPreviewImages('spPastePreview', getItemImages(r));
       openModal('sampleModal');
     }
 
@@ -3271,7 +3328,8 @@
         ngayKy: document.getElementById('fSpNgayKy').value || getTodayISO(),
         han: document.getElementById('fSpHan').value,
         nguoiLuu: currentUser.name,
-        img: sanitizeImageSrc(tempBase64)
+        img: tempImages[0] || "",
+        imgs: tempImages.slice()
       };
       if (idx === -1) sampleList.unshift(item); else sampleList[idx] = item;
       saveStateToLocal(false, "", "", "sampleList");
@@ -3289,9 +3347,8 @@
 
     // --- TAB CON 5.2: DANH MỤC HIỆU CHUẨN THIẾT BỊ ---
     function previewEquipRowImage(idx) {
-      if (equipList[idx] && equipList[idx].img) {
-        openSafeImagePreview(equipList[idx].img);
-      }
+      const imgs = getItemImages(equipList[idx]);
+      if (imgs.length > 0) openSafeImagePreview(imgs, 0);
     }
 
     let activeEquipFilter = "ALL";
@@ -3429,7 +3486,7 @@
           : `<td>${isJig ? '<span style="color:#94a3b8;">—</span>' : formatDateVN(r.ngayHC)}</td>
              <td>${isJig ? '<span style="color:#94a3b8;">—</span>' : formatDateVN(r.hanHC)}</td>`;
 
-        const safeImg = sanitizeImageSrc(r.img);
+        const rowImgs = getItemImages(r);
         tbody.innerHTML += `<tr>
           <td>${idx + 1}</td>
           <td>${typeBadge}</td>
@@ -3443,7 +3500,7 @@
           ${calColsHtml}
           <td>${statusHtml}</td>
           <td>${escapeHtml(r.nguoiPT)}</td>
-          <td>${safeImg ? `<img src="${safeImg}" class="thumb-img" onclick="previewEquipRowImage(${origIdx})" alt="Ảnh">` : '—'}</td>
+          <td>${renderThumbCellHtml(rowImgs, `previewEquipRowImage(${origIdx})`)}</td>
           <td class="no-capture">
             <button type="button" class="btn btn-outline" style="padding:2px 6px; font-size:11px;" onclick="requireAuth(() => openEditEquipModal(${origIdx}))">✏ Sửa</button>
             ${isAdmin ? `<button type="button" class="btn-icon-del" onclick="deleteEquipRow(${origIdx})">🗑️</button>` : ""}
@@ -3481,7 +3538,7 @@
       document.getElementById('fEqNote').value = r.ghiChu || "";
       document.getElementById('fEqNgayHC').value = r.ngayHC || "";
       document.getElementById('fEqHanHC').value = r.hanHC || "";
-      setPreviewImage('eqPastePreview', r.img || "");
+      setPreviewImages('eqPastePreview', getItemImages(r));
       selectEquipType(r.loaiTB === "JIG" ? "JIG" : "MEASURE");
       openModal('equipModal');
     }
@@ -3502,7 +3559,8 @@
         hanHC: loaiTB === "JIG" ? "" : document.getElementById('fEqHanHC').value,
         ghiChu: document.getElementById('fEqNote').value.trim(),
         nguoiPT: currentUser ? currentUser.name : "",
-        img: sanitizeImageSrc(tempBase64)
+        img: tempImages[0] || "",
+        imgs: tempImages.slice()
       };
       if (idx === -1) equipList.push(item); else equipList[idx] = item;
       saveStateToLocal(false, "", "", "equipList");
@@ -3645,18 +3703,49 @@
       showToast("✅ Đã chấm OK toàn bộ thiết bị cho ngày hôm nay!", "info");
     }
 
-    // ================= 9. HỖ TRỢ DÁN ẢNH CTRL+V AN TOÀN =================
-    function setPreviewImage(imgTagId, base64Str) {
-      const cleanImg = sanitizeImageSrc(base64Str);
-      tempBase64 = cleanImg;
-      const el = document.getElementById(imgTagId);
+    // ================= 9. HỖ TRỢ ĐÍNH KÈM & DÁN NHIỀU ẢNH CTRL+V AN TOÀN =================
+    function renderPasteGallery(containerId) {
+      const el = document.getElementById(containerId);
       if (!el) return;
-      if (cleanImg) { el.src = cleanImg; el.style.display = 'inline-block'; }
-      else { el.src = ''; el.style.display = 'none'; }
+      tempBase64 = tempImages[0] || "";
+      if (tempImages.length === 0) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = tempImages.map((src, idx) => `
+        <div class="paste-gallery-item">
+          <img src="${src}" alt="Ảnh ${idx + 1}" onclick="previewTempGalleryImage(${idx})" title="Bấm để phóng to">
+          <button type="button" class="paste-gallery-del" onclick="removeTempImage('${containerId}', ${idx})" title="Xóa ảnh này">✕</button>
+        </div>
+      `).join('');
     }
 
-    function compressAndSetPreviewImage(previewId, rawDataUrl) {
-      if (!rawDataUrl) { setPreviewImage(previewId, ""); return; }
+    function setPreviewImages(containerId, imgList) {
+      tempImages = Array.isArray(imgList) ? imgList.map(sanitizeImageSrc).filter(Boolean).slice(0, MAX_IMAGES_PER_RECORD) : [];
+      renderPasteGallery(containerId);
+    }
+
+    function setPreviewImage(containerId, base64Str) {
+      const cleanImg = sanitizeImageSrc(base64Str);
+      tempImages = cleanImg ? [cleanImg] : [];
+      renderPasteGallery(containerId);
+    }
+
+    function removeTempImage(containerId, idx) {
+      tempImages.splice(idx, 1);
+      renderPasteGallery(containerId);
+    }
+
+    function previewTempGalleryImage(idx) {
+      if (tempImages.length > 0) openSafeImagePreview(tempImages, idx);
+    }
+
+    function appendCompressedImageToGallery(containerId, rawDataUrl) {
+      if (!rawDataUrl) return;
+      if (tempImages.length >= MAX_IMAGES_PER_RECORD) {
+        showToast(`Mỗi bản ghi chỉ hỗ trợ tối đa ${MAX_IMAGES_PER_RECORD} ảnh!`, "warn");
+        return;
+      }
       const img = new Image();
       img.onload = function() {
         const maxDim = 1200;
@@ -3665,6 +3754,7 @@
           if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
           else { w = Math.round(w * (maxDim / h)); h = maxDim; }
         }
+        let finalImg = rawDataUrl;
         try {
           const canvas = document.createElement('canvas');
           canvas.width = w;
@@ -3673,27 +3763,37 @@
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
-          const compressed = canvas.toDataURL('image/jpeg', 0.78);
-          setPreviewImage(previewId, compressed);
-        } catch (err) {
-          setPreviewImage(previewId, rawDataUrl);
+          finalImg = canvas.toDataURL('image/jpeg', 0.78);
+        } catch (err) {}
+        const clean = sanitizeImageSrc(finalImg);
+        if (clean && tempImages.length < MAX_IMAGES_PER_RECORD) {
+          tempImages.push(clean);
+          renderPasteGallery(containerId);
         }
       };
-      img.onerror = function() { setPreviewImage(previewId, rawDataUrl); };
+      img.onerror = function() {
+        const clean = sanitizeImageSrc(rawDataUrl);
+        if (clean && tempImages.length < MAX_IMAGES_PER_RECORD) {
+          tempImages.push(clean);
+          renderPasteGallery(containerId);
+        }
+      };
       img.src = rawDataUrl;
     }
 
-    function previewPasteImage(input, previewId) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
+    function previewPasteImage(input, containerId) {
+      if (!input.files || input.files.length === 0) return;
+      const files = Array.from(input.files);
+      files.forEach(file => {
         if (!file.type.startsWith("image/")) {
           showToast("Chỉ cho phép đính kèm tệp hình ảnh hợp lệ!", "error");
           return;
         }
         const reader = new FileReader();
-        reader.onload = e => compressAndSetPreviewImage(previewId, e.target.result);
+        reader.onload = e => appendCompressedImageToGallery(containerId, e.target.result);
         reader.readAsDataURL(file);
-      }
+      });
+      input.value = "";
     }
 
     window.addEventListener('paste', function(e) {
@@ -3704,16 +3804,17 @@
       if (!targetPreview) return;
 
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      let handled = false;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
           const reader = new FileReader();
-          reader.onload = event => compressAndSetPreviewImage(targetPreview, event.target.result);
+          reader.onload = event => appendCompressedImageToGallery(targetPreview, event.target.result);
           reader.readAsDataURL(blob);
-          e.preventDefault();
-          break;
+          handled = true;
         }
       }
+      if (handled) e.preventDefault();
     });
 
     // ================= 10. XUẤT EXCEL & XUẤT ẢNH =================
@@ -4581,7 +4682,7 @@
       saveSampleForm, deleteSampleRow, previewEquipRowImage, setEquipFilter, renderEquipFilterPills, selectEquipType, renderTab5Equip, openAddEquipModal,
       openEditEquipModal, saveEquipForm, deleteEquipRow, getEquipDailyMatrixKey,
       renderTab5DailyMatrix, openEquipDailyCellPickerByIdx, openEquipDailyCellPicker,
-      applyEquipDailyValue, markTodayAllEquipOK, setPreviewImage, previewPasteImage,
+      applyEquipDailyValue, markTodayAllEquipOK, setPreviewImage, setPreviewImages, removeTempImage, previewTempGalleryImage, stepLightboxImage, previewPasteImage,
       exportTableToExcel, exportSectionToImage, switchTab, updateAdminUIControls,
       openPinModal, submitPinLogin, logoutPIN, requireAuth, generateAutoCodeForDate,
       previewAutoTaskCodeByDate, initTab6Filters, getTaskStatusInfo, getUserNameById,
