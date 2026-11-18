@@ -242,6 +242,7 @@
     .paste-gallery-del { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--danger); color: #fff; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
     .thumb-stack { position: relative; display: inline-block; cursor: pointer; }
     .thumb-count-badge { position: absolute; bottom: -4px; right: -6px; background: var(--primary); color: #fff; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 10px; border: 1px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+    .matrix-wrap { padding-bottom: 14px; }
   </style>
 </head>
 <body>
@@ -307,6 +308,7 @@
           <button type="button" class="btn btn-blue" onclick="exportFullBackupJSON()" title="Tải toàn bộ dữ liệu hệ thống về máy (.json)">📥 Sao Lưu (.json)</button>
           <button type="button" class="btn btn-outline" onclick="document.getElementById('restoreFileInput').click()" style="border-color:var(--primary-med); color:var(--primary);" title="Khôi phục dữ liệu từ file .json">📤 Phục Hồi</button>
           <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="importFullBackupJSON(this)">
+          <button type="button" class="btn btn-outline" onclick="openAdminExcelImportModal()" style="border-color:#0f766e; color:#0f766e;" title="Nhập dữ liệu hàng loạt từ file Excel vào Tab 2, 3, 4">📊 Nhập Excel</button>
           <button type="button" class="btn btn-outline" onclick="openSheetConfigModal()" style="border-color:#d97706; color:#b45309;">🔗 Cấu Hình Sheet</button>
           <button type="button" class="btn btn-outline" onclick="openSecurityModal()" style="border-color:#dc2626; color:#b91c1c;">🔐 Đổi Pass & PIN</button>
         </div>
@@ -1264,6 +1266,33 @@
     </div>
   </div>
 
+  <!-- MODAL ADMIN NHẬP EXCEL THEO TỪNG HẠNG MỤC (TAB 2 - TAB 6) -->
+  <div id="adminExcelImportModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3>📊 Nhập Dữ Liệu Excel Theo Hạng Mục (Admin)</h3>
+        <button type="button" class="btn btn-outline" onclick="closeModal('adminExcelImportModal')">✕</button>
+      </div>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-weight: 700;">1. Chọn hạng mục cần nhập (giữ nguyên form chuẩn của từng Tab):</label>
+        <select id="adminImportTargetTab" class="form-control" onchange="updateAdminImportHint()">
+          <option value="lotData">Tab 2 · Lot phát sinh</option>
+          <option value="ngPendingData" selected>Tab 3 · Hàng NG chờ xử lý</option>
+          <option value="claimData">Tab 4 · Claim Fee NCC</option>
+        </select>
+      </div>
+      <div id="adminImportColsHint" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:12px; color:#334155; line-height:1.5; margin-bottom:14px;"></div>
+      <input type="file" id="adminExcelFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="executeAdminExcelImport(this)">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-outline" onclick="downloadAdminImportTemplate()">📄 Tải file Excel mẫu</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('adminExcelImportModal')">Đóng</button>
+          <button type="button" class="btn btn-green" onclick="document.getElementById('adminExcelFileInput').click()">📥 Chọn File Excel (.xlsx)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL XEM ẢNH MINH CHỨNG AN TOÀN (THAY THẾ WINDOW.OPEN TRÁNH XSS) -->
   <div id="imagePreviewModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('imagePreviewModal')">
     <div class="modal-box" style="max-width: 760px; text-align: center;">
@@ -1778,7 +1807,7 @@
       const yEq = document.getElementById('yearSelectEquipDaily');
       if (yEq) yEq.value = curY;
 
-      ['filterMonthTab2', 'filterMonthTab3', 'filterMonthTab4', 'filterMonthTab6'].forEach(id => {
+      ['filterMonthTab2', 'filterMonthTab4', 'filterMonthTab6'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = curMM;
       });
@@ -2184,10 +2213,38 @@
     function jumpToSection(tabId, subTab5Id) {
       const navEl = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
       switchTab(tabId, navEl);
-      if (tabId === 'tab5' && subTab5Id) {
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+      if (tabId === 'tab2') {
+        const now = new Date();
+        setVal('filterMonthTab2', String(now.getMonth() + 1).padStart(2, '0'));
+        setVal('filterYearTab2', String(now.getFullYear()));
+        setVal('filterNCCTab2', 'ALL');
+        setVal('filterCDTab2', 'ALL');
+        renderTab2();
+      } else if (tabId === 'tab3') {
+        setVal('filterMonthTab3', 'ALL');
+        setVal('filterYearTab3', 'ALL');
+        setVal('filterNCCTab3', 'ALL');
+        setVal('filterStatusTab3', 'ALL');
+        renderTab3();
+      } else if (tabId === 'tab5' && subTab5Id) {
         const btns = document.querySelectorAll('#subTab5Container .sub-tab-btn');
         const idx = subTab5Id === 'subTab5_1' ? 0 : (subTab5Id === 'subTab5_2' ? 1 : 2);
         if (btns[idx]) switchSubTab5(subTab5Id, btns[idx]);
+        if (subTab5Id === 'subTab5_1') {
+          setVal('filterLoaiHangSample', 'ALL');
+          setVal('filterStatusSample', 'ALL');
+          renderTab5Sample();
+        } else if (subTab5Id === 'subTab5_2') {
+          activeEquipFilter = 'MEASURE';
+          renderTab5Equip();
+        }
+      } else if (tabId === 'tab6') {
+        setVal('filterMonthTab6', 'ALL');
+        setVal('filterYearTab6', 'ALL');
+        setVal('filterAssigneeTab6', 'ALL');
+        setVal('filterStatusTab6', 'ALL');
+        renderTab6All();
       }
     }
 
@@ -2989,6 +3046,549 @@
         saveStateToLocal(false, "", "", "ngPendingData");
         populateFiltersTab3(); renderTab3();
       });
+    }
+
+    function normalizeVNKey(str) {
+      return String(str || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function parseExcelDateToISO(val) {
+      if (val === null || val === undefined || val === "") return getTodayISO();
+      if (typeof val === "number" && val > 20000 && val < 90000) {
+        if (typeof XLSX !== 'undefined' && XLSX.SSF && typeof XLSX.SSF.parse_date_code === 'function') {
+          const parsed = XLSX.SSF.parse_date_code(val);
+          if (parsed && parsed.y && parsed.m && parsed.d) {
+            return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+          }
+        }
+        const utcDays = Math.floor(val + 1e-6) - 25569;
+        const dt = new Date(utcDays * 86400 * 1000);
+        return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+      }
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        const safeDt = new Date(val.getTime() + 12 * 3600 * 1000);
+        return `${safeDt.getUTCFullYear()}-${String(safeDt.getUTCMonth() + 1).padStart(2, '0')}-${String(safeDt.getUTCDate()).padStart(2, '0')}`;
+      }
+      const s = String(val).trim();
+      const isoMatch = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+      }
+      const vnMatch = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+      if (vnMatch) {
+        return `${vnMatch[3]}-${vnMatch[2].padStart(2, '0')}-${vnMatch[1].padStart(2, '0')}`;
+      }
+      return getTodayISO();
+    }
+
+    function resolveStaffNameFromShort(rawName) {
+      const clean = String(rawName || "").trim();
+      if (!clean) return currentUser ? currentUser.name : "";
+      const norm = normalizeVNKey(clean);
+      const exact = USERS.find(u => normalizeVNKey(u.name) === norm);
+      if (exact) return exact.name;
+      const byLastWord = USERS.find(u => {
+        const parts = normalizeVNKey(u.name).split(" ");
+        return parts[parts.length - 1] === norm;
+      });
+      if (byLastWord) return byLastWord.name;
+      const partial = USERS.find(u => normalizeVNKey(u.name).includes(norm));
+      if (partial) return partial.name;
+      return clean;
+    }
+
+    function importNGFromExcel(inputEl) {
+      if (!currentUser) {
+        showToast("Vui lòng đăng nhập mã PIN trước khi nhập Excel!", "error");
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+      if (typeof XLSX === 'undefined') {
+        showToast("Thư viện đọc Excel đang tải, vui lòng thử lại sau vài giây!", "warn");
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+      const file = inputEl && inputEl.files && inputEl.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, { type: 'array', cellDates: false, cellStyles: false, cellHTML: false, cellFormula: false });
+          let targetRows = null;
+          let headerRowIdx = -1;
+          let colMap = null;
+
+          for (const sheetName of wb.SheetNames) {
+            const ws = wb.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
+            for (let r = 0; r < Math.min(rows.length, 15); r++) {
+              const row = rows[r];
+              if (!Array.isArray(row)) continue;
+              const map = {};
+              row.forEach((cell, idx) => {
+                const h = normalizeVNKey(cell);
+                if (!h) return;
+                if (h.includes("ma hang") || h === "code" || h.includes("ma sp")) map.maHang = idx;
+                else if (h.includes("loai hang") || h.includes("chung loai")) map.loaiHang = idx;
+                else if (h.includes("nha cung cap") || h === "ncc") map.ncc = idx;
+                else if (h === "ngay" || h.includes("ngay phat sinh") || h.includes("ngay thang") || h === "date") map.ngay = idx;
+                else if (h.includes("so luong") || h === "sl" || h === "sl ng") map.slNG = idx;
+                else if (h.includes("tinh trang") || h.includes("loi")) map.loi = idx;
+                else if (h.includes("hien trang") || h.includes("trang thai")) map.hienTrang = idx;
+                else if (h.includes("nguoi xac nhan") || h.includes("fail") || h.includes("nguoi kt")) map.nguoiXN = idx;
+                else if (h.includes("ghi chu") || h === "note") map.ghiChu = idx;
+              });
+              if (map.maHang !== undefined && (map.ncc !== undefined || map.slNG !== undefined || map.loi !== undefined)) {
+                targetRows = rows;
+                headerRowIdx = r;
+                colMap = map;
+                break;
+              }
+            }
+            if (targetRows) break;
+          }
+
+          if (!targetRows || !colMap) {
+            showToast("Không tìm thấy bảng dữ liệu Hàng NG hợp lệ (cần có cột Mã hàng)!", "error");
+            return;
+          }
+
+          const existingKeys = new Set(ngPendingData.map(it =>
+            `${it.ngay}|${normalizeVNKey(it.maHang)}|${normalizeVNKey(it.ncc)}|${Number(it.slNG) || 0}|${normalizeVNKey(it.loi)}`
+          ));
+
+          const importedItems = [];
+          let skippedDup = 0;
+
+          for (let r = headerRowIdx + 1; r < targetRows.length; r++) {
+            const row = targetRows[r];
+            if (!Array.isArray(row)) continue;
+            const maHang = String(row[colMap.maHang] ?? "").trim();
+            if (!maHang) continue;
+
+            const ngay = colMap.ngay !== undefined ? parseExcelDateToISO(row[colMap.ngay]) : getTodayISO();
+            const loaiHang = colMap.loaiHang !== undefined ? String(row[colMap.loaiHang] ?? "").trim() : "";
+            const ncc = colMap.ncc !== undefined ? String(row[colMap.ncc] ?? "").trim() : "";
+            const loi = colMap.loi !== undefined ? String(row[colMap.loi] ?? "").trim() : "";
+            const rawHienTrang = colMap.hienTrang !== undefined ? String(row[colMap.hienTrang] ?? "").trim() : "";
+            const hienTrang = (rawHienTrang === "Đang xử lý" || rawHienTrang === "Đã xử lý") ? rawHienTrang : "Chưa xử lý";
+            const nguoiXN = colMap.nguoiXN !== undefined ? resolveStaffNameFromShort(row[colMap.nguoiXN]) : currentUser.name;
+            let ghiChu = colMap.ghiChu !== undefined ? String(row[colMap.ghiChu] ?? "").trim() : "";
+
+            const rawSL = colMap.slNG !== undefined ? row[colMap.slNG] : 0;
+            let slNG = 0;
+            if (typeof rawSL === "number" && !isNaN(rawSL)) {
+              slNG = rawSL;
+            } else {
+              const slStr = String(rawSL ?? "").trim();
+              const numMatch = slStr.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+              slNG = numMatch ? parseFloat(numMatch[0]) : 0;
+              if (slStr && /[a-zA-ZÀ-ỹ]/.test(slStr)) {
+                ghiChu = ghiChu ? `(${slStr}) ${ghiChu}` : `Đơn vị: ${slStr}`;
+              }
+            }
+
+            const dupKey = `${ngay}|${normalizeVNKey(maHang)}|${normalizeVNKey(ncc)}|${Number(slNG) || 0}|${normalizeVNKey(loi)}`;
+            if (existingKeys.has(dupKey)) {
+              skippedDup++;
+              continue;
+            }
+            existingKeys.add(dupKey);
+
+            importedItems.push({
+              ngay,
+              maHang,
+              loaiHang,
+              ncc,
+              slNG,
+              hienTrang,
+              loi,
+              ghiChu,
+              nguoiXN,
+              img: "",
+              imgs: []
+            });
+          }
+
+          if (importedItems.length === 0) {
+            showToast(skippedDup > 0 ? `Toàn bộ ${skippedDup} dòng trong file Excel đã tồn tại trên hệ thống!` : "Không có dòng dữ liệu nào để nhập!", "warn");
+            return;
+          }
+
+          importedItems.sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)));
+          ngPendingData = importedItems.concat(ngPendingData);
+
+          const importedMonths = new Set(importedItems.map(x => String(x.ngay).slice(5, 7)));
+          const importedYears = new Set(importedItems.map(x => String(x.ngay).slice(0, 4)));
+          const fMonthEl = document.getElementById('filterMonthTab3');
+          const fYearEl = document.getElementById('filterYearTab3');
+          if (fMonthEl && importedMonths.size > 1) fMonthEl.value = "ALL";
+          if (fYearEl) {
+            if (importedYears.size > 1) fYearEl.value = "ALL";
+            else {
+              const onlyYear = Array.from(importedYears)[0];
+              if (onlyYear) fYearEl.value = onlyYear;
+            }
+          }
+
+          saveStateToLocal(false, "", "", "ngPendingData");
+          populateFiltersTab3();
+          renderTab3();
+          const skipMsg = skippedDup > 0 ? ` (bỏ qua ${skippedDup} dòng trùng)` : "";
+          showToast(`✅ Đã nhập thành công ${importedItems.length} dòng Hàng NG từ Excel${skipMsg} và đồng bộ lên Sheet!`, "info");
+        } catch (err) {
+          showToast("Lỗi đọc file Excel: " + err.message, "error");
+        } finally {
+          if (inputEl) inputEl.value = "";
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function resolveStaffIdFromInput(rawVal, fallbackId) {
+      const clean = String(rawVal || "").trim();
+      if (!clean) return fallbackId || (currentUser ? currentUser.id : "");
+      const upper = clean.toUpperCase();
+      const byId = USERS.find(u => String(u.id || "").toUpperCase() === upper || String(u.id || "").replace("GS.", "").toUpperCase() === upper);
+      if (byId) return byId.id;
+      const norm = normalizeVNKey(clean);
+      const byName = USERS.find(u => normalizeVNKey(u.name) === norm) ||
+                     USERS.find(u => { const p = normalizeVNKey(u.name).split(" "); return p[p.length - 1] === norm; }) ||
+                     USERS.find(u => normalizeVNKey(u.name).includes(norm));
+      return byName ? byName.id : (fallbackId || (currentUser ? currentUser.id : ""));
+    }
+
+    const ADMIN_IMPORT_SPECS = {
+      lotData: {
+        label: "Tab 2 · Lot phát sinh",
+        sampleFile: "Mau_Import_Tab2_Lot_Phat_Sinh.xlsx",
+        headers: ["STT", "Ngày", "Mã Code", "Tên NVL", "Nhà cung cấp", "Công đoạn", "SL Kiểm", "SL NG", "Lỗi gặp phải", "Biện pháp xử lý", "Người xác nhận"],
+        hint: "Cột hỗ trợ: <b>Ngày, Mã Code, Tên NVL, Nhà cung cấp, Công đoạn, SL Kiểm, SL NG, Lỗi gặp phải, Biện pháp xử lý, Người xác nhận</b>."
+      },
+      ngPendingData: {
+        label: "Tab 3 · Hàng NG chờ xử lý",
+        sampleFile: "Mau_Import_Tab3_Hang_NG.xlsx",
+        headers: ["STT", "Mã hàng", "Loại hàng", "Nhà cung cấp", "Ngày", "Số lượng NG", "Tình trạng NG", "Hiện trạng", "Người xác nhận / Fail", "Ghi chú"],
+        hint: "Khớp trực tiếp cả file <b>NVL NG 1AB.xlsx</b> (tự bỏ qua sheet trống, tự khớp tên nhân sự, chặn trùng dòng). Cột hỗ trợ: <b>Mã hàng, Loại hàng, Nhà cung cấp, Ngày, Số lượng NG, Tình trạng NG, Hiện trạng, Người xác nhận, Ghi chú</b>."
+      },
+      claimData: {
+        label: "Tab 4 · Claim Fee NCC",
+        sampleFile: "Mau_Import_Tab4_Claim_Fee.xlsx",
+        headers: ["STT", "Ngày", "Nhà cung cấp", "Số NCR", "Mã sản phẩm", "SL Vào SX", "SL NG", "Lỗi gặp phải", "Số người", "Giờ bắt đầu", "Giờ kết thúc", "Tổng giờ", "Đơn giá lọc", "Tiền hàng"],
+        hint: "Cột hỗ trợ: <b>Ngày, Nhà cung cấp, Số NCR, Mã sản phẩm, SL Vào SX, SL NG, Lỗi gặp phải, Số người, Giờ bắt đầu, Giờ kết thúc, Tổng giờ, Đơn giá lọc, Tiền hàng</b>."
+      },
+      sampleList: {
+        label: "Tab 5.1 · Bản Mẫu Chuẩn",
+        sampleFile: "Mau_Import_Tab5_1_Ban_Mau.xlsx",
+        headers: ["STT", "Mã Hàng / Code", "Loại hàng", "Tên sản phẩm", "Nhà cung cấp", "Vị trí lưu", "Người ký", "Ngày ký", "Hạn hiệu lực", "Người lưu"],
+        hint: "Cột hỗ trợ: <b>Mã Hàng / Code, Loại hàng, Tên sản phẩm, Nhà cung cấp, Vị trí lưu, Người ký, Ngày ký, Hạn hiệu lực, Người lưu</b>."
+      },
+      equipList: {
+        label: "Tab 5.2 · Thiết Bị Đo & Jig",
+        sampleFile: "Mau_Import_Tab5_2_Thiet_Bi_Jig.xlsx",
+        headers: ["STT", "Phân loại (MEASURE/JIG)", "Mã thiết bị", "Tên thiết bị / Jig", "Số Serial / Model", "Vị trí", "Ngày hiệu chuẩn", "Hạn hiệu chuẩn", "Ghi chú", "Người phụ trách"],
+        hint: "Cột hỗ trợ: <b>Phân loại (Thiết bị đo hoặc Jig), Mã thiết bị, Tên thiết bị / Jig, Serial / Model, Vị trí, Ngày hiệu chuẩn, Hạn hiệu chuẩn, Ghi chú, Người phụ trách</b>."
+      },
+      taskList: {
+        label: "Tab 6 · Giao Việc & KPI",
+        sampleFile: "Mau_Import_Tab6_Giao_Viec.xlsx",
+        headers: ["STT", "Mã việc", "Ngày giao", "Hạn hoàn thành", "Nội dung công việc", "Mức độ", "Người giao", "Người nhận", "Trạng thái", "Ghi chú"],
+        hint: "Cột hỗ trợ: <b>Mã việc (để trống sẽ tự sinh), Ngày giao, Hạn hoàn thành, Nội dung công việc, Mức độ (Bình thường/Ưu tiên/Khẩn cấp), Người giao, Người nhận, Trạng thái, Ghi chú</b>."
+      }
+    };
+
+    function updateAdminImportHint() {
+      const sel = document.getElementById('adminImportTargetTab');
+      const box = document.getElementById('adminImportColsHint');
+      if (!sel || !box) return;
+      const spec = ADMIN_IMPORT_SPECS[sel.value] || ADMIN_IMPORT_SPECS.ngPendingData;
+      box.innerHTML = `<div style="margin-bottom:4px; color:var(--primary); font-weight:700;">📌 Định dạng chuẩn cho ${spec.label}:</div><div>${spec.hint}</div>`;
+    }
+
+    function openAdminExcelImportModal() {
+      if (!isAdminSession()) {
+        showToast("Chỉ Admin mới có quyền nhập dữ liệu Excel hàng loạt!", "error");
+        return;
+      }
+      const sel = document.getElementById('adminImportTargetTab');
+      if (sel) {
+        if (currentActiveTabId === "tab2") sel.value = "lotData";
+        else if (currentActiveTabId === "tab4") sel.value = "claimData";
+        else sel.value = "ngPendingData";
+      }
+      updateAdminImportHint();
+      openModal('adminExcelImportModal');
+    }
+
+    function downloadAdminImportTemplate() {
+      if (typeof XLSX === 'undefined') {
+        showToast("Thư viện Excel đang tải, vui lòng thử lại!", "warn");
+        return;
+      }
+      const sel = document.getElementById('adminImportTargetTab');
+      const key = sel ? sel.value : "ngPendingData";
+      const spec = ADMIN_IMPORT_SPECS[key] || ADMIN_IMPORT_SPECS.ngPendingData;
+      const ws = XLSX.utils.aoa_to_sheet([spec.headers]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data_Import");
+      XLSX.writeFile(wb, spec.sampleFile);
+    }
+
+    function executeAdminExcelImport(inputEl) {
+      if (!isAdminSession()) {
+        showToast("Chỉ Admin mới có quyền nhập dữ liệu Excel!", "error");
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+      const sel = document.getElementById('adminImportTargetTab');
+      const targetKey = sel ? sel.value : "ngPendingData";
+      if (targetKey === "ngPendingData") {
+        importNGFromExcel(inputEl);
+        closeModal('adminExcelImportModal');
+        return;
+      }
+      if (typeof XLSX === 'undefined') {
+        showToast("Thư viện đọc Excel đang tải, vui lòng thử lại!", "warn");
+        if (inputEl) inputEl.value = "";
+        return;
+      }
+      const file = inputEl && inputEl.files && inputEl.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, { type: 'array', cellDates: false, cellStyles: false, cellHTML: false, cellFormula: false });
+          let targetRows = null, headerRowIdx = -1, colMap = null;
+
+          for (const sheetName of wb.SheetNames) {
+            const ws = wb.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
+            for (let r = 0; r < Math.min(rows.length, 15); r++) {
+              const row = rows[r];
+              if (!Array.isArray(row)) continue;
+              const map = {};
+              row.forEach((cell, idx) => {
+                const h = normalizeVNKey(cell);
+                if (!h) return;
+                if (h.includes("noi dung")) map.noiDung = idx;
+                else if (h.includes("ma viec") || h.includes("ma code") || h === "code" || h.includes("ma hang") || h.includes("ma san pham") || h.includes("ma sp") || h.includes("ma thiet bi") || h === "ma") map.code = idx;
+                else if (h.includes("ten nvl") || h.includes("ten san pham") || h.includes("ten thiet bi") || h === "ten") map.ten = idx;
+                else if (h.includes("nha cung cap") || h === "ncc") map.ncc = idx;
+                else if (h.includes("cong doan") || h === "cd") map.cd = idx;
+                else if (h.includes("sl kiem") || h.includes("so luong kiem")) map.slKiem = idx;
+                else if (h.includes("sl vao") || h.includes("vao sx")) map.slVao = idx;
+                else if (h.includes("sl ng") || h.includes("so luong ng")) map.slNG = idx;
+                else if (h.includes("loi") || h.includes("tinh trang")) map.loi = idx;
+                else if (h.includes("bien phap")) map.bienPhap = idx;
+                else if (h.includes("ncr")) map.ncr = idx;
+                else if (h.includes("so nguoi")) map.soNguoi = idx;
+                else if (h.includes("bat dau")) map.tStart = idx;
+                else if (h.includes("ket thuc")) map.tEnd = idx;
+                else if (h.includes("tong gio")) map.tongGio = idx;
+                else if (h.includes("don gia") || h.includes("gia loc")) map.giaLoc = idx;
+                else if (h.includes("tien hang")) map.tienHang = idx;
+                else if (h.includes("loai hang") || h.includes("phan loai")) map.loai = idx;
+                else if (h.includes("vi tri")) map.viTri = idx;
+                else if (h.includes("nguoi ky")) map.nguoiKy = idx;
+                else if (h.includes("ngay giao")) map.ngayGiao = idx;
+                else if (h.includes("ngay ky") || h.includes("ngay hieu chuan") || h.includes("ngay hc")) map.ngayStart = idx;
+                else if (h.includes("han")) map.han = idx;
+                else if (h.includes("muc do") || h.includes("uu tien")) map.mucDo = idx;
+                else if (h.includes("nguoi giao")) map.nguoiGiao = idx;
+                else if (h.includes("nguoi nhan") || h.includes("thuc hien")) map.nguoiNhan = idx;
+                else if (h.includes("trang thai")) map.trangThai = idx;
+                else if (h.includes("serial") || h.includes("model")) map.serial = idx;
+                else if (h.includes("ghi chu") || h === "note") map.ghiChu = idx;
+                else if (h.includes("nguoi xac nhan") || h.includes("nguoi luu") || h.includes("nguoi phu trach")) map.nguoi = idx;
+                else if (h === "ngay" || h.includes("ngay thang") || h === "date") map.ngay = idx;
+              });
+              const isValidHeader = (targetKey === "taskList") ? (map.noiDung !== undefined) : (map.code !== undefined);
+              if (isValidHeader) {
+                targetRows = rows; headerRowIdx = r; colMap = map; break;
+              }
+            }
+            if (targetRows) break;
+          }
+
+          if (!targetRows || !colMap) {
+            showToast("Không tìm thấy tiêu đề cột phù hợp trong file Excel! Hãy bấm 'Tải file Excel mẫu' để xem cột chuẩn.", "error");
+            return;
+          }
+
+          const parseNum = (v, def = 0) => {
+            if (typeof v === "number" && !isNaN(v)) return v;
+            const m = String(v ?? "").replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+            return m ? parseFloat(m[0]) : def;
+          };
+
+          let added = 0;
+          if (targetKey === "lotData") {
+            const items = [];
+            for (let r = headerRowIdx + 1; r < targetRows.length; r++) {
+              const row = targetRows[r];
+              const code = String(row[colMap.code] ?? "").trim();
+              if (!code) continue;
+              items.push({
+                ngay: colMap.ngay !== undefined ? parseExcelDateToISO(row[colMap.ngay]) : getTodayISO(),
+                code,
+                tenNVL: colMap.ten !== undefined ? String(row[colMap.ten] ?? "").trim() : "",
+                ncc: colMap.ncc !== undefined ? String(row[colMap.ncc] ?? "").trim() : "",
+                cd: colMap.cd !== undefined ? String(row[colMap.cd] ?? "").trim() : "",
+                slKiem: colMap.slKiem !== undefined ? parseNum(row[colMap.slKiem], 0) : 0,
+                slNG: colMap.slNG !== undefined ? parseNum(row[colMap.slNG], 0) : 0,
+                loi: colMap.loi !== undefined ? String(row[colMap.loi] ?? "").trim() : "",
+                bienPhap: colMap.bienPhap !== undefined ? String(row[colMap.bienPhap] ?? "").trim() : "",
+                nguoiXN: colMap.nguoi !== undefined ? resolveStaffNameFromShort(row[colMap.nguoi]) : currentUser.name
+              });
+            }
+            added = items.length;
+            if (added > 0) {
+              lotData = items.concat(lotData);
+              saveStateToLocal(false, "", "", "lotData");
+              populateFiltersTab2(); renderTab2();
+            }
+          } else if (targetKey === "claimData") {
+            const items = [];
+            for (let r = headerRowIdx + 1; r < targetRows.length; r++) {
+              const row = targetRows[r];
+              const code = String(row[colMap.code] ?? "").trim();
+              if (!code) continue;
+              const ngay = colMap.ngay !== undefined ? parseExcelDateToISO(row[colMap.ngay]) : getTodayISO();
+              items.push({
+                ngay,
+                ncc: colMap.ncc !== undefined ? String(row[colMap.ncc] ?? "").trim().toUpperCase() : "",
+                ncr: (colMap.ncr !== undefined && String(row[colMap.ncr] ?? "").trim()) ? String(row[colMap.ncr]).trim() : generateAutoNCRForDate(ngay),
+                code,
+                slVao: colMap.slVao !== undefined ? parseNum(row[colMap.slVao], 0) : 0,
+                slNG: colMap.slNG !== undefined ? parseNum(row[colMap.slNG], 0) : 0,
+                loi: colMap.loi !== undefined ? String(row[colMap.loi] ?? "").trim() : "",
+                soNguoi: colMap.soNguoi !== undefined ? Math.max(1, parseNum(row[colMap.soNguoi], 1)) : 1,
+                tStart: colMap.tStart !== undefined ? String(row[colMap.tStart] ?? "").trim() : "",
+                tEnd: colMap.tEnd !== undefined ? String(row[colMap.tEnd] ?? "").trim() : "",
+                tongGio: colMap.tongGio !== undefined ? parseNum(row[colMap.tongGio], 0) : 0,
+                giaLoc: colMap.giaLoc !== undefined ? parseNum(row[colMap.giaLoc], 60052) : 60052,
+                tienHang: colMap.tienHang !== undefined ? parseNum(row[colMap.tienHang], 0) : 0
+              });
+            }
+            added = items.length;
+            if (added > 0) {
+              claimData = items.concat(claimData);
+              saveStateToLocal(false, "", "", "claimData");
+              populateFiltersTab4(); renderTab4();
+            }
+          } else if (targetKey === "sampleList") {
+            const items = [];
+            for (let r = headerRowIdx + 1; r < targetRows.length; r++) {
+              const row = targetRows[r];
+              const code = String(row[colMap.code] ?? "").trim();
+              if (!code) continue;
+              items.push({
+                code,
+                loaiHang: colMap.loai !== undefined ? String(row[colMap.loai] ?? "").trim() : "Giấy",
+                ten: colMap.ten !== undefined ? String(row[colMap.ten] ?? "").trim() : "",
+                ncc: colMap.ncc !== undefined ? String(row[colMap.ncc] ?? "").trim() : "",
+                viTri: colMap.viTri !== undefined ? String(row[colMap.viTri] ?? "").trim() : "",
+                nguoiKy: colMap.nguoiKy !== undefined ? String(row[colMap.nguoiKy] ?? "").trim() : "",
+                ngayKy: colMap.ngayStart !== undefined ? parseExcelDateToISO(row[colMap.ngayStart]) : getTodayISO(),
+                han: (colMap.han !== undefined && row[colMap.han]) ? parseExcelDateToISO(row[colMap.han]) : "",
+                nguoiLuu: colMap.nguoi !== undefined ? resolveStaffNameFromShort(row[colMap.nguoi]) : currentUser.name,
+                img: "",
+                imgs: []
+              });
+            }
+            added = items.length;
+            if (added > 0) {
+              sampleList = items.concat(sampleList);
+              saveStateToLocal(false, "", "", "sampleList");
+              renderTab5Sample();
+            }
+          } else if (targetKey === "equipList") {
+            const items = [];
+            for (let r = headerRowIdx + 1; r < targetRows.length; r++) {
+              const row = targetRows[r];
+              const ma = String(row[colMap.code] ?? "").trim().toUpperCase();
+              if (!ma) continue;
+              const rawLoai = colMap.loai !== undefined ? normalizeVNKey(row[colMap.loai]) : "";
+              const loaiTB = rawLoai.includes("jig") ? "JIG" : "MEASURE";
+              items.push({
+                loaiTB,
+                ma,
+                ten: colMap.ten !== undefined ? String(row[colMap.ten] ?? "").trim() : ma,
+                serial: colMap.serial !== undefined ? String(row[colMap.serial] ?? "").trim() : "",
+                viTri: colMap.viTri !== undefined ? String(row[colMap.viTri] ?? "").trim() : "",
+                ngayHC: loaiTB === "JIG" ? "" : (colMap.ngayStart !== undefined ? parseExcelDateToISO(row[colMap.ngayStart]) : getTodayISO()),
+                hanHC: loaiTB === "JIG" ? "" : ((colMap.han !== undefined && row[colMap.han]) ? parseExcelDateToISO(row[colMap.han]) : ""),
+                ghiChu: colMap.ghiChu !== undefined ? String(row[colMap.ghiChu] ?? "").trim() : "",
+                nguoiPT: colMap.nguoi !== undefined ? resolveStaffNameFromShort(row[colMap.nguoi]) : currentUser.name,
+                img: "",
+                imgs: []
+              });
+            }
+            added = items.length;
+            if (added > 0) {
+              equipList = equipList.concat(items);
+              saveStateToLocal(false, "", "", "equipList");
+              renderTab5Equip(); renderTab5DailyMatrix();
+            }
+          } else if (targetKey === "taskList") {
+            const items = [];
+            for (let r = headerRowIdx + 1; r < targetRows.length; r++) {
+              const row = targetRows[r];
+              const noiDung = String(row[colMap.noiDung] ?? "").trim();
+              if (!noiDung) continue;
+              const ngayGiao = colMap.ngayGiao !== undefined ? parseExcelDateToISO(row[colMap.ngayGiao]) : getTodayISO();
+              const hanChot = (colMap.han !== undefined && row[colMap.han]) ? parseExcelDateToISO(row[colMap.han]) : ngayGiao;
+              const rawSt = colMap.trangThai !== undefined ? normalizeVNKey(row[colMap.trangThai]) : "";
+              const isDone = rawSt.includes("xong") || rawSt.includes("hoan thanh") || rawSt === "done";
+              const rawPri = colMap.mucDo !== undefined ? normalizeVNKey(row[colMap.mucDo]) : "";
+              let mucDo = "Bình thường";
+              if (rawPri.includes("khan")) mucDo = "Khẩn cấp";
+              else if (rawPri.includes("uu tien") || rawPri.includes("cao")) mucDo = "Ưu tiên";
+              items.push({
+                code: (colMap.code !== undefined && String(row[colMap.code] ?? "").trim()) ? String(row[colMap.code]).trim() : generateAutoCodeForDate(ngayGiao),
+                ngayGiao,
+                hanChot,
+                noiDung,
+                mucDo,
+                nguoiGiaoId: colMap.nguoiGiao !== undefined ? resolveStaffIdFromInput(row[colMap.nguoiGiao], currentUser.id) : currentUser.id,
+                nguoiNhanId: colMap.nguoiNhan !== undefined ? resolveStaffIdFromInput(row[colMap.nguoiNhan], currentUser.id) : currentUser.id,
+                isDone,
+                ngayXong: isDone ? getTodayISO() : "",
+                ghiChu: colMap.ghiChu !== undefined ? String(row[colMap.ghiChu] ?? "").trim() : ""
+              });
+            }
+            added = items.length;
+            if (added > 0) {
+              taskList = items.concat(taskList);
+              saveStateToLocal(false, "", "", "taskList");
+              renderTab6All();
+            }
+          }
+
+          if (added > 0) {
+            closeModal('adminExcelImportModal');
+            showToast(`✅ Đã nhập ${added} dòng vào ${ADMIN_IMPORT_SPECS[targetKey].label} và đồng bộ lên Sheet!`, "info");
+          } else {
+            showToast("Không có dòng dữ liệu hợp lệ nào trong file Excel!", "warn");
+          }
+        } catch (err) {
+          showToast("Lỗi đọc file Excel: " + err.message, "error");
+        } finally {
+          if (inputEl) inputEl.value = "";
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
 
     // ================= 7. TAB 4: TÍNH PHÍ CLAIM FEE NCC (AUTO NHẢY GIỜ LỌC 24H) =================
@@ -4675,7 +5275,7 @@
       populateFiltersTab2, getFilteredLotData, renderTab2, updateChartsTab2, calcLotRatio,
       openAddLotModal, openEditLotModal, saveLotForm, deleteLotRow, populateFiltersTab3,
       getFilteredNGData, openSafeImagePreview, previewNGRowImage, renderTab3, updateChartsTab3,
-      openAddNGModal, openEditNGModal, saveNGForm, deleteNGRow, generateAutoNCRForDate,
+      openAddNGModal, openEditNGModal, saveNGForm, deleteNGRow, importNGFromExcel, openAdminExcelImportModal, updateAdminImportHint, downloadAdminImportTemplate, executeAdminExcelImport, generateAutoNCRForDate,
       previewAutoNCRByDate, populateFiltersTab4, renderTab4, calcClaimPreview, calcClaimTotalOnly,
       openAddClaimModal, openEditClaimModal, saveClaimForm, deleteClaimRow, switchSubTab5,
       previewSampleRowImage, renderTab5Sample, openAddSampleModal, openEditSampleModal,
