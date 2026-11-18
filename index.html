@@ -1163,7 +1163,7 @@
         </div>
         <div class="form-group" id="grpNgayHC"><label>Ngày Hiệu Chuẩn Gần Nhất:</label><input type="date" id="fEqNgayHC" class="form-control"></div>
         <div class="form-group" id="grpHanHC"><label>Hạn Hiệu Chuẩn Tiếp Theo:</label><input type="date" id="fEqHanHC" class="form-control"></div>
-        <div class="form-group full"><label id="lblEqNote">Ghi Chú / Lưu Ý Sử Dụng Thiết Bị Đo (Tùy chọn):</label><input type="text" id="fEqNote" class="form-control" placeholder="VD: Hiệu chuẩn định kỳ 12 tháng/lần, kiểm tra điểm trước ca..."></div>
+        <div class="form-group full"><label id="lblEqNote">Ghi Chú / Lưu Ý Sử Dụng Thiết Bị Đo (Tùy chọn):</label><input type="text" id="fEqNote" class="form-control" placeholder="VD: Hiệu chuẩn định kỳ 12 tháng/lần, kiểm tra điểm 0 trước ca..."></div>
         <div class="form-group full">
           <label id="lblEqImg">Ảnh Tem Hiệu Chuẩn (Nhấn Ctrl + V để dán ảnh hoặc Chọn tệp):</label>
           <div class="paste-zone" tabindex="0">
@@ -1842,7 +1842,7 @@
       }
     }
 
-    function saveStateToLocal(syncUsersFlag = false, authPassOverride = "", adminPinOverride = "") {
+    function saveStateToLocal(syncUsersFlag = false, authPassOverride = "", adminPinOverride = "", changedSection = "ALL", changedSubKey = "") {
       try {
         TODAY_STR = getTodayISO();
         const allowUserSync = Boolean(syncUsersFlag && isAdminSession());
@@ -1850,7 +1850,7 @@
         persistEncryptedVaultToLocal(payload);
         renderDailyBulletin();
         if (API_URL && API_URL.startsWith("https://script.google.com")) {
-          pushAllDataToCloud(false, allowUserSync, authPassOverride, adminPinOverride);
+          pushAllDataToCloud(false, allowUserSync, authPassOverride, adminPinOverride, changedSection, changedSubKey);
         } else {
           updateSyncStatusBadge("local");
         }
@@ -2204,7 +2204,7 @@
         return;
       }
       navMenuItems[idx].visible = isChecked;
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "navMenuItems");
       renderSidebarNav();
       switchTab(currentActiveTabId);
     }
@@ -2215,7 +2215,7 @@
       const temp = navMenuItems[idx];
       navMenuItems[idx] = navMenuItems[targetIdx];
       navMenuItems[targetIdx] = temp;
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "navMenuItems");
       renderMenuConfigList();
       renderSidebarNav();
     }
@@ -2518,8 +2518,9 @@
       const allowed = ["", "44H", "NP", "1/2P", "KL"];
       const cleanVal = String(val).trim().toUpperCase();
       if (!allowed.includes(cleanVal)) return;
+      const leaveSubKey = (year === 2026) ? String(month) : `${year}_${month}`;
       setLeaveRecordValue(year, month, empId, day, cleanVal);
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "monthlyLeaveRecords", leaveSubKey);
       closeModal('leaveCellModal');
       renderMatrix44h();
     }
@@ -2748,7 +2749,7 @@
       if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
       if (fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
 
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "lotData");
       closeModal('lotModal'); populateFiltersTab2(); renderTab2();
     }
 
@@ -2756,7 +2757,7 @@
       if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         lotData.splice(idx, 1);
-        saveStateToLocal();
+        saveStateToLocal(false, "", "", "lotData");
         populateFiltersTab2(); renderTab2();
       });
     }
@@ -2919,7 +2920,7 @@
       if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
       if (fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
 
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "ngPendingData");
       closeModal('ngModal'); populateFiltersTab3(); renderTab3();
     }
 
@@ -2927,7 +2928,7 @@
       if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         ngPendingData.splice(idx, 1);
-        saveStateToLocal();
+        saveStateToLocal(false, "", "", "ngPendingData");
         populateFiltersTab3(); renderTab3();
       });
     }
@@ -3137,7 +3138,7 @@
       if (fYearEl && fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
       document.getElementById('filterNCCTab4').value = "ALL";
 
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "claimData");
       closeModal('claimModal');
       populateFiltersTab4();
       renderTab4();
@@ -3147,7 +3148,7 @@
       if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         claimData.splice(idx, 1);
-        saveStateToLocal();
+        saveStateToLocal(false, "", "", "claimData");
         populateFiltersTab4(); renderTab4();
       });
     }
@@ -3273,7 +3274,7 @@
         img: sanitizeImageSrc(tempBase64)
       };
       if (idx === -1) sampleList.unshift(item); else sampleList[idx] = item;
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "sampleList");
       closeModal('sampleModal'); renderTab5Sample();
     }
 
@@ -3281,7 +3282,7 @@
       if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         sampleList.splice(idx, 1);
-        saveStateToLocal();
+        saveStateToLocal(false, "", "", "sampleList");
         renderTab5Sample();
       });
     }
@@ -3344,7 +3345,7 @@
       if (inpNote) {
         inpNote.placeholder = isJig
           ? "VD: Kiểm tra độ phẳng Jig, chốt định vị không rơ lỏng trước ca..."
-          : "VD: Hiệu chuẩn định kỳ 12 tháng/lần, kiểm tra điểm trước ca...";
+          : "VD: Hiệu chuẩn định kỳ 12 tháng/lần, kiểm tra điểm 0 trước ca...";
       }
 
       document.getElementById('lblEqImg').innerText = isJig
@@ -3504,7 +3505,7 @@
         img: sanitizeImageSrc(tempBase64)
       };
       if (idx === -1) equipList.push(item); else equipList[idx] = item;
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "equipList");
       closeModal('equipModal');
       renderTab5Equip();
     }
@@ -3513,7 +3514,7 @@
       if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         equipList.splice(idx, 1);
-        saveStateToLocal();
+        saveStateToLocal(false, "", "", "equipList");
         renderTab5Equip();
         renderTab5DailyMatrix();
       });
@@ -3617,7 +3618,7 @@
       if (val === "") delete equipDailyMatrixData[matrixKey][eqMa].days[day];
       else equipDailyMatrixData[matrixKey][eqMa].days[day] = val;
 
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "equipDailyMatrixData", matrixKey);
       closeModal('equipDailyCellModal');
       renderTab5DailyMatrix();
     }
@@ -3639,7 +3640,7 @@
         if (currentUser) equipDailyMatrixData[matrixKey][eq.ma].checker = currentUser.name;
         equipDailyMatrixData[matrixKey][eq.ma].days[todayDay] = "OK";
       });
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "equipDailyMatrixData", matrixKey);
       renderTab5DailyMatrix();
       showToast("✅ Đã chấm OK toàn bộ thiết bị cho ngày hôm nay!", "info");
     }
@@ -3654,6 +3655,34 @@
       else { el.src = ''; el.style.display = 'none'; }
     }
 
+    function compressAndSetPreviewImage(previewId, rawDataUrl) {
+      if (!rawDataUrl) { setPreviewImage(previewId, ""); return; }
+      const img = new Image();
+      img.onload = function() {
+        const maxDim = 1200;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+        }
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.78);
+          setPreviewImage(previewId, compressed);
+        } catch (err) {
+          setPreviewImage(previewId, rawDataUrl);
+        }
+      };
+      img.onerror = function() { setPreviewImage(previewId, rawDataUrl); };
+      img.src = rawDataUrl;
+    }
+
     function previewPasteImage(input, previewId) {
       if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -3662,7 +3691,7 @@
           return;
         }
         const reader = new FileReader();
-        reader.onload = e => setPreviewImage(previewId, e.target.result);
+        reader.onload = e => compressAndSetPreviewImage(previewId, e.target.result);
         reader.readAsDataURL(file);
       }
     }
@@ -3679,7 +3708,7 @@
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
           const reader = new FileReader();
-          reader.onload = event => setPreviewImage(targetPreview, event.target.result);
+          reader.onload = event => compressAndSetPreviewImage(targetPreview, event.target.result);
           reader.readAsDataURL(blob);
           e.preventDefault();
           break;
@@ -4127,7 +4156,7 @@
       }
       tk.isDone = !tk.isDone;
       tk.ngayXong = tk.isDone ? getTodayISO() : "";
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "taskList");
       renderTab6All();
     }
 
@@ -4276,7 +4305,7 @@
       const fYearEl = document.getElementById('filterYearTab6');
       if (fMonthEl.value !== "ALL" && fMonthEl.value !== addedMonth) fMonthEl.value = addedMonth;
       if (fYearEl && fYearEl.value !== "ALL" && fYearEl.value !== addedYear) fYearEl.value = addedYear;
-      saveStateToLocal();
+      saveStateToLocal(false, "", "", "taskList");
       closeModal('taskModal');
       renderTab6All();
     }
@@ -4285,7 +4314,7 @@
       if (!isAdminSession()) return;
       askDeleteConfirm(() => {
         taskList.splice(idx, 1);
-        saveStateToLocal();
+        saveStateToLocal(false, "", "", "taskList");
         renderTab6All();
       });
     }
@@ -4451,7 +4480,7 @@
       closeModal('sheetConfigModal');
     }
 
-    async function pushAllDataToCloud(showAlert = false, syncUsersFlag = false, authPassOverride = "", adminPinOverride = "") {
+    async function pushAllDataToCloud(showAlert = false, syncUsersFlag = false, authPassOverride = "", adminPinOverride = "", changedSection = "ALL", changedSubKey = "") {
       const cfgEl = document.getElementById('cfgApiUrlInput');
       const customRaw = cfgEl && !document.getElementById('sheetConfigModal').classList.contains('hidden') ? cfgEl.value.trim() : "";
       const url = decodeEndpointToken(customRaw) || API_URL;
@@ -4470,6 +4499,8 @@
         const rawObj = buildCleanMemoryPayload(allowUserSync);
         rawObj.authPass = authPassToUse;
         rawObj.systemPass = systemPass || sessionAuthPass;
+        rawObj.changedSection = changedSection || "ALL";
+        if (changedSubKey) rawObj.changedSubKey = changedSubKey;
         if (allowUserSync) {
           rawObj.adminPin = adminPinOverride || sessionAdminPin || (currentUser ? currentUser.pin : "");
         }
